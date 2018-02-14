@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+clear
+if [[ $1 == -xd ]] ; then
+  php -d xdebug.remote_enable=1 vendor/phpunit/phpunit/phpunit -c phpunit.xml "${@:2}"
+elif [[ $1 == -xdp ]] ; then
+  php -d xdebug.profiler_enable=1 vendor/phpunit/phpunit/phpunit -c phpunit.xml "${@:2}"
+else
+  vendor/bin/phpunit -c phpunit.xml "$@"
+fi

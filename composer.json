@@ -1,0 +1,22 @@
+{
+    "name": "rtek/total-return",
+    "description": "Experiment in calculating stock market total returns.",
+	"license": "http://unlicense.org",
+    "require": {
+        "php": "^7.1",
+        "guzzlehttp/guzzle": "^6.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^6.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "TotalReturn\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "TotalReturn\\": "tests"
+        }
+    }
+}
