@@ -28,7 +28,9 @@ class App
 
     static public function create(array $configProviders = [])
     {
-        array_unshift($configProviders, new PhpFileProvider('config/{,*.}{global,local}.php'));
+
+        array_unshift($configProviders, new Service(), new PhpFileProvider('config/{,*.}{global,local}.php'));
+
         $config = (new ConfigAggregator($configProviders))->getMergedConfig();
 
         $sm = new ServiceManager($config['service_manager'] ?? []);

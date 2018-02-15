@@ -23,7 +23,7 @@ class Client
             RequestOptions::HEADERS => [
                 'Accept' => 'application/json'
             ],
-            RequestOptions::HTTP_ERRORS => false
+            RequestOptions::HTTP_ERRORS => false,
         ]);
     }
 
@@ -46,7 +46,7 @@ class Client
 
     protected function query($params)
     {
-        $resp = $this->client->get('query', [
+        $resp = $this->client->get('query', $opts = [
             RequestOptions::QUERY => array_merge([
                 'apikey' => $this->key
             ], $params)
@@ -61,6 +61,12 @@ class Client
             echo $resp->getBody()->getContents();
             throw new \LogicException('Did not get 200');
         }
-        return json_decode($resp->getBody()->getContents(), true);
+        $json = json_decode($resp->getBody()->getContents(), true);
+
+        if($error = $json['Error Message'] ?? false) {
+            throw new \LogicException($error);
+        }
+
+        return $json;
     }
 }

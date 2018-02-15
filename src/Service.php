@@ -2,11 +2,13 @@
 
 namespace TotalReturn;
 
-use Zend\ServiceManager\ServiceManager;
+use TotalReturn\Av\Client as AvClient;
 
 class Service
 {
-    const CONFIG = 'TotalReturn\Config';
+    const CONFIG = __NAMESPACE__.'\Config';
+    const ALPHAVANTAGE_CLIENT = AvClient::class;
+    const MARKET_DATA = MarketData::class;
 
 
     public function __invoke()
