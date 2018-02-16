@@ -21,10 +21,11 @@ class PortfolioTest extends TestCase
 
         /** @var MarketData $md */
         $md = $sm->get(Service::MARKET_DATA);
+        $md->setLogger($logger = new Logger());
 
-        $portfolio = new Portfolio(new \DateTime('2018-01-02'), $md);
+        $portfolio = new Portfolio(new \DateTime('2017-01-01'), $md);
 
-        $portfolio->setLogger(new Logger());
+        $portfolio->setLogger($logger);
 
         $portfolio->deposit(100000);
         $portfolio->buy('AAPL', 100);

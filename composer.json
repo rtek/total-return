@@ -4,7 +4,7 @@
 	"license": "http://unlicense.org",
     "require": {
         "php": "^7.1",
-        "fire015/flintstone": "2.*",
+        "doctrine/dbal": "^2.6",
         "guzzlehttp/guzzle": "^6.0",
         "psr/log": "^1.0",
         "zendframework/zend-config-aggregator": "^1.0",
