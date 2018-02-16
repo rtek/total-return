@@ -20,6 +20,8 @@ class Portfolio
 
     protected $position = [];
 
+    protected $dividends = [];
+
     public function __construct(\DateTime $startDay, MarketData $marketData)
     {
         $this->marketData = $marketData;
@@ -29,7 +31,7 @@ class Portfolio
 
     public function deposit(float $amount)
     {
-        $this->adjustPosition(self::CASH, $amount, 1);
+        $this->adjustPosition(self::CASH, $amount);
         return $this;
     }
 
@@ -39,7 +41,7 @@ class Portfolio
             throw new \LogicException('Cannot withdraw more than available cash');
         }
 
-        $this->adjustPosition(self::CASH, -$amount, 1);
+        $this->adjustPosition(self::CASH, -$amount);
         return $this;
     }
 
@@ -52,8 +54,8 @@ class Portfolio
             throw new \LogicException('Cannot buy more than available cash');
         }
 
-        $this->adjustPosition($symbol, $qty, $price);
-        $this->adjustPosition(self::CASH, -$amount, 1);
+        $this->adjustPosition($symbol, $qty);
+        $this->adjustPosition(self::CASH, -$amount);
         return $this;
     }
 
@@ -64,8 +66,8 @@ class Portfolio
         }
         $price = $this->marketData->getClose($symbol, $this->timeline->today());
 
-        $this->adjustPosition($symbol, -$qty, $price);
-        $this->adjustPosition(self::CASH, $qty, 1);
+        $this->adjustPosition($symbol, -$qty);
+        $this->adjustPosition(self::CASH, $qty * $price);
         return $this;
     }
 
@@ -74,24 +76,46 @@ class Portfolio
         return $this->position[$symbol] ?? 0;
     }
 
-    protected function adjustPosition(string $symbol, float $qty, float $price): void
+    protected function adjustPosition(string $symbol, float $qty): void
     {
         if(!array_key_exists($symbol, $this->position)) {
             $this->position[$symbol] = 0;
         }
 
-        $this->logger->info(sprintf('Adjust: %+8d %-4s @ % 7.2f ', $qty, $symbol, $price));
+        $this->logger->info(sprintf('Adjust: %+8d %-4s', $qty, $symbol));
 
-        $this->position[$symbol] += $qty * $price;
+        $this->position[$symbol] += $qty;
     }
 
     public function forward()
     {
+        $today = $this->timeline->today();
+
+        foreach($this->position as $symbol => $pos) {
+            if ($dividend = $this->marketData->findDividend($symbol, $today)) {
+                $this->dividends[] = array_merge($dividend, [
+                    'symbol' => $symbol
+                ]);
+            }
+        }
+
+        foreach($this->dividends as $i => $dividend) {
+            if ($dividend['paymentDate'] == $today) {
+
+                $price = $this->marketData->getClose($dividend['symbol'], $today);
+                $this->adjustPosition($dividend['symbol'], $dividend['amount'] / $price);
+
+                unset($this->dividends[$i]);
+            }
+        }
+
         $this->timeline->forward();
     }
 
     public function forwardTo(\DateTime $to)
     {
-        $this->timeline->forwardTo(new \DateTime($to->format('Y-m-d')));
+        while ($this->timeline->today() < $to) {
+            $this->forward();
+        }
     }
 }

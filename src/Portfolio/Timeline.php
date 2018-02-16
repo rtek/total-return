@@ -34,7 +34,7 @@ class Timeline
         return array_values($out);
     }
 
-    public function today()
+    public function today(): \DateTime
     {
         return clone $this->days[$this->index];
     }
