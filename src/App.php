@@ -1,5 +1,4 @@
-<?php
-
+<?php declare(strict_types=1);
 
 namespace TotalReturn;
 
@@ -25,10 +24,8 @@ class App
         return $this->serviceManager;
     }
 
-
-    static public function create(array $configProviders = [])
+    public static function create(array $configProviders = [])
     {
-
         array_unshift($configProviders, new Service(), new PhpFileProvider('config/{,*.}{global,local}.php'));
 
         $config = (new ConfigAggregator($configProviders))->getMergedConfig();

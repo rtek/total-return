@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace TotalReturn;
 
@@ -9,12 +9,10 @@ class Logger implements LoggerInterface
 {
     use LoggerTrait;
 
-    public function log($level, $message, array $context = [])
+    public function log($level, $message, array $context = []): void
     {
         echo $message."\n";
         ob_flush();
         flush();
     }
-
-
 }

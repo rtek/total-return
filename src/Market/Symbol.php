@@ -1,8 +1,6 @@
-<?php
-
+<?php declare(strict_types=1);
 
 namespace TotalReturn\Market;
-
 
 class Symbol
 {
@@ -34,14 +32,13 @@ class Symbol
         return $this->getTicker();
     }
 
-
-    static protected $symbols = [];
+    protected static $symbols = [];
 
     //@todo validation / etc
-    static public function lookup(string $ticker): Symbol
+    public static function lookup(string $ticker): self
     {
         if (!array_key_exists($ticker, self::$symbols)) {
-           self::$symbols[$ticker] = new Symbol($ticker);
+            self::$symbols[$ticker] = new self($ticker);
         }
         return self::$symbols[$ticker];
     }

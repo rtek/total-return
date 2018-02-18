@@ -1,5 +1,4 @@
-<?php
-
+<?php declare(strict_types=1);
 
 namespace TotalReturn\Api\Xignite;
 
@@ -19,7 +18,6 @@ class Client
     /** @var string */
     protected $userId;
 
-
     public function __construct(string $token, string $userId)
     {
         $this->token = $token;
@@ -29,9 +27,9 @@ class Client
             'base_uri' => 'https://www.xignite.com/',
             RequestOptions::VERIFY => realpath('data/cabundle.pem'),
             RequestOptions::HEADERS => [
-                'User-Agent' => 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36'
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36',
             ],
-            RequestOptions::HTTP_ERRORS => false
+            RequestOptions::HTTP_ERRORS => false,
         ]);
     }
 
@@ -50,21 +48,20 @@ class Client
             '_token' => $this->token,
             '_token_userid' => $this->userId,
             '_' => strtotime('now'),
-            ]
+            ],
         ]);
 
         $symbol = Symbol::lookup($ticker);
         $json = $this->extractJson($resp);
 
-        return array_map(function($item) use ($symbol) {
+        return array_map(function ($item) use ($symbol) {
             return new Dividend($symbol, $item);
         }, $json['Dividends']);
-
     }
 
     protected function extractJson(ResponseInterface $resp)
     {
-        if($resp->getStatusCode() !== 200) {
+        if ($resp->getStatusCode() !== 200) {
             echo $resp->getBody()->getContents();
             throw new \LogicException('Did not get 200');
         }

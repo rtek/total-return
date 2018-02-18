@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace TotalReturn;
 
@@ -9,13 +9,13 @@ use TotalReturn\Api\Xignite\Client as XigniteClient;
 
 class Service
 {
-    const CONFIG = __NAMESPACE__.'\Config';
-    const ALPHAVANTAGE_CLIENT = AvClient::class;
-    const IEX_CLIENT = IexClient::class;
-    const MARKET_DATA = MarketData::class;
-    const DBAL_CONNECTION = Connection::class;
-    const KEY_VALUE = KeyValue::class;
-    const XIGNITE_CLIENT = XigniteClient::class;
+    public const CONFIG = __NAMESPACE__.'\Config';
+    public const ALPHAVANTAGE_CLIENT = AvClient::class;
+    public const IEX_CLIENT = IexClient::class;
+    public const MARKET_DATA = MarketData::class;
+    public const DBAL_CONNECTION = Connection::class;
+    public const KEY_VALUE = KeyValue::class;
+    public const XIGNITE_CLIENT = XigniteClient::class;
 
     public function __invoke()
     {

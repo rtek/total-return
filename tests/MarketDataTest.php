@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace TotalReturn;
 
@@ -8,7 +8,7 @@ use Zend\ConfigAggregator\PhpFileProvider;
 
 class MarketDataTest extends TestCase
 {
-    public function testDividends()
+    public function testDividends(): void
     {
         $app = App::create([new PhpFileProvider('tests/_files/config/{,*.}{global,local}.php')]);
 
@@ -22,6 +22,5 @@ class MarketDataTest extends TestCase
 
         $this->assertNotNull($md->findDividend($vbmfx = Symbol::lookup('VBMFX'), new \DateTime('2017-12-22')));
         $this->assertNotNull($md->findDividend($vbmfx, new \DateTime('2017-10-02')));
-
     }
 }

@@ -1,8 +1,6 @@
-<?php
-
+<?php declare(strict_types=1);
 
 namespace TotalReturn;
-
 
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
@@ -15,8 +13,8 @@ class MarketData
 {
     use LoggerAwareTrait;
 
-    const TRADEDAY_TICKER = 'SPY';
-    const TRADEDAY_DAY = '2010-01-05';
+    public const TRADEDAY_TICKER = 'SPY';
+    public const TRADEDAY_DAY = '2010-01-05';
 
     /** @var KeyValue */
     protected $kv;
@@ -49,9 +47,9 @@ class MarketData
 
     public function getTradingDays(): array
     {
-        if($this->tradingDays === null) {
+        if ($this->tradingDays === null) {
             $this->getDaily(new Symbol(self::TRADEDAY_TICKER), new \DateTime(self::TRADEDAY_DAY));
-            $this->tradingDays = array_map(function($id) {
+            $this->tradingDays = array_map(function ($id) {
                 return new \DateTime($id);
             }, $this->kv->getIds('daily-'.self::TRADEDAY_TICKER));
         }
@@ -62,8 +60,8 @@ class MarketData
     public function getTradingDaysAfter(\DateTime $after): array
     {
         $tradingDays = $this->getTradingDays();
-              $i = 0;
-        foreach($tradingDays as $i => $day) {
+        $i = 0;
+        foreach ($tradingDays as $i => $day) {
             if ($day >= $after) {
                 break;
             }
@@ -81,7 +79,7 @@ class MarketData
 
     public function getClose(Symbol $symbol, \DateTime $day): float
     {
-        if(!$this->isTradingDay($day)) {
+        if (!$this->isTradingDay($day)) {
             throw new \LogicException("{$day->format('Y-m-d')} is not a trading day");
         }
 
@@ -91,8 +89,7 @@ class MarketData
 
     protected function getDaily(Symbol $symbol, \DateTime $day): array
     {
-
-        if(!$this->kv->has($ns = "daily-$symbol", $id = $day->format('Y-m-d'))) {
+        if (!$this->kv->has($ns = "daily-$symbol", $id = $day->format('Y-m-d'))) {
             //100 datapoints is not 100 trade days but close enough
             $size = $day > new \DateTime('now -100 days') ? 'compact' : 'full';
 
@@ -109,7 +106,7 @@ class MarketData
 
         $daily = $this->kv->get($ns, $id);
 
-        if(!is_array($daily)) {
+        if (!is_array($daily)) {
             throw new \LogicException("$ns $id did not return an array");
         }
 
@@ -123,20 +120,18 @@ class MarketData
         return $this->kv->get("dividend-$symbol", $exDate->format('Y-m-d')) ?? null;
     }
 
-    protected function updateDividends(Symbol $symbol)
+    protected function updateDividends(Symbol $symbol): void
     {
         $lastUpdated = new \DateTime($this->kv->get('dividend-update', $symbol) ?? 'today -1 day');
 
-        if($lastUpdated < new \DateTime('today')) {
-
+        if ($lastUpdated < new \DateTime('today')) {
             $this->logger->debug("Fetching dividends for $symbol");
 
-            if($symbol->isMutualFund()) {
+            if ($symbol->isMutualFund()) {
                 $dividends = $this->xig->getDividends($symbol);
             } else {
                 $dividends = $this->iex->getDividends($symbol, '5y');
             }
-
 
             $replace = [];
             foreach ($dividends as $d) {

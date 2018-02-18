@@ -1,10 +1,6 @@
-<?php
-
+<?php declare(strict_types=1);
 
 namespace TotalReturn\Portfolio;
-
-
-use TotalReturn\MarketData;
 
 class Timeline
 {
@@ -26,7 +22,7 @@ class Timeline
     protected function prepareDays(array $in)
     {
         $out = [];
-        foreach($in as $i) {
+        foreach ($in as $i) {
             $dt = new \DateTime($i->format('Y-m-d'));
             $out[$dt->getTimestamp()] = $dt;
         }
@@ -39,23 +35,23 @@ class Timeline
         return clone $this->days[$this->index];
     }
 
-    public function forward()
+    public function forward(): void
     {
         $this->index++;
     }
 
-    public function forwardTo(\DateTime $to)
+    public function forwardTo(\DateTime $to): void
     {
         $end = $this->findNearestIndex($to);
 
-        for(;$this->index < $end;) {
+        for (; $this->index < $end;) {
             $this->forward();
         }
     }
 
     protected function findNearestIndex(\DateTime $day)
     {
-        foreach($this->days as $i => $d) {
+        foreach ($this->days as $i => $d) {
             if ($d >= $day) {
                 return $i;
             }

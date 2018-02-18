@@ -1,9 +1,8 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace TotalReturn;
 
 use Doctrine\DBAL\DriverManager;
-
 use Interop\Container\ContainerInterface;
 use TotalReturn\Api\Av\Client as AvClient;
 use TotalReturn\Api\Iex\Client as IexClient;
@@ -20,7 +19,7 @@ class ServiceFactory implements FactoryInterface
     {
         $this->ct = $ct;
 
-        switch($name) {
+        switch ($name) {
             case Service::ALPHAVANTAGE_CLIENT:
                 return new AvClient($this->getConfig('av', 'key'));
             case Service::IEX_CLIENT:
@@ -41,11 +40,10 @@ class ServiceFactory implements FactoryInterface
                     'host' => '127.0.0.1',
                     'user' => 'root',
                     'password' => 'pass',
-                    'dbname' => 'total_return'
+                    'dbname' => 'total_return',
                 ]);
             case Service::KEY_VALUE:
                 return new KeyValue($ct->get(Service::DBAL_CONNECTION));
-
         }
 
         throw new ServiceNotFoundException("Could not resolve service '$name'");
@@ -55,10 +53,10 @@ class ServiceFactory implements FactoryInterface
     {
         $lookup = $this->ct->get(Service::CONFIG);
         foreach ($keys as $key) {
-            if(!is_array($lookup)) {
+            if (!is_array($lookup)) {
                 break;
             }
-            if(!array_key_exists($key, $lookup)) {
+            if (!array_key_exists($key, $lookup)) {
                 $keys = implode(', ', array_keys($lookup));
                 throw new \RuntimeException("Could not find config $key from keys $keys");
             }

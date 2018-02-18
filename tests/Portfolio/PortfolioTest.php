@@ -1,21 +1,19 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace TotalReturn\Portfolio;
 
 use PHPUnit\Framework\TestCase;
-use TotalReturn\App;
 use TotalReturn\AppTrait;
 use TotalReturn\Logger;
+use TotalReturn\Market\Symbol;
 use TotalReturn\MarketData;
 use TotalReturn\Service;
-use TotalReturn\Market\Symbol;
-use Zend\ConfigAggregator\PhpFileProvider;
 
 class PortfolioTest extends TestCase
 {
     use AppTrait;
 
-    public function testTrades()
+    public function testTrades(): void
     {
         $app = $this->createApp();
         $sm = $app->getServiceManager();

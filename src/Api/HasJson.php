@@ -1,5 +1,4 @@
-<?php
-
+<?php declare(strict_types=1);
 
 namespace TotalReturn\Api;
 
@@ -16,10 +15,10 @@ trait HasJson
     {
         $lookup = $this->json;
         foreach ($args as $arg) {
-            if(!is_array($lookup)) {
+            if (!is_array($lookup)) {
                 break;
             }
-            if(!array_key_exists($arg, $lookup)) {
+            if (!array_key_exists($arg, $lookup)) {
                 $keys = implode(', ', array_keys($lookup));
                 throw new \RuntimeException("Could not find $arg from keys $keys");
             }
@@ -35,7 +34,7 @@ trait HasJson
      */
     public function set(...$args)
     {
-        if(count($args) < 2) {
+        if (count($args) < 2) {
             throw new \LogicException('Must have at least two args');
         }
         $value = array_pop($args);
@@ -43,7 +42,7 @@ trait HasJson
 
         $array = &$this->json;
 
-        foreach($args as $arg) {
+        foreach ($args as $arg) {
             $array[$arg] = [];
             $array = &$array[$arg];
         }
@@ -52,5 +51,4 @@ trait HasJson
 
         return $this;
     }
-
 }

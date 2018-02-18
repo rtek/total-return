@@ -1,5 +1,4 @@
-<?php
-
+<?php declare(strict_types=1);
 
 namespace TotalReturn\Market;
 
@@ -12,5 +11,4 @@ trait HasSymbol
     {
         return $this->symbol;
     }
-
 }

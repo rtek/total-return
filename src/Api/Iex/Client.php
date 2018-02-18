@@ -1,5 +1,4 @@
-<?php
-
+<?php declare(strict_types=1);
 
 namespace TotalReturn\Api\Iex;
 
@@ -18,9 +17,9 @@ class Client
             'base_uri' => 'https://api.iextrading.com/1.0/',
             RequestOptions::VERIFY => realpath('data/cabundle.pem'),
             RequestOptions::HEADERS => [
-                'Accept' => 'application/json'
+                'Accept' => 'application/json',
             ],
-            RequestOptions::HTTP_ERRORS => false
+            RequestOptions::HTTP_ERRORS => false,
         ]);
     }
 
@@ -47,10 +46,9 @@ class Client
 
         $symbol = new Symbol($symbol);
 
-        return array_map(function($item) use ($symbol) {
+        return array_map(function ($item) use ($symbol) {
             return new Dividend($symbol, $item);
         }, $this->extractJson($resp));
-
     }
 
     public function getChart(string $symbol, $time): array
@@ -59,10 +57,9 @@ class Client
         return $this->extractJson($resp);
     }
 
-
     protected function extractJson(ResponseInterface $resp)
     {
-        if($resp->getStatusCode() !== 200) {
+        if ($resp->getStatusCode() !== 200) {
             echo $resp->getBody()->getContents();
             throw new \LogicException('Did not get 200');
         }

@@ -1,5 +1,4 @@
-<?php
-
+<?php declare(strict_types=1);
 
 namespace TotalReturn\Api\Xignite;
 
@@ -8,13 +7,12 @@ use TotalReturn\Market\DividendInterface;
 use TotalReturn\Market\HasSymbol;
 use TotalReturn\Market\Symbol;
 
-
 class Dividend extends Attribute implements DividendInterface
 {
-    const DIV_DAILY_ACCRUAL = 'DailyAccrualFund';
-    const DIV_LT_CG = 'CapitalGainLongTerm';
-    const DIV_ST_CG = 'CapitalGainShortTerm';
-    const DIV_NONE = 'None'; //wtf?
+    public const DIV_DAILY_ACCRUAL = 'DailyAccrualFund';
+    public const DIV_LT_CG = 'CapitalGainLongTerm';
+    public const DIV_ST_CG = 'CapitalGainShortTerm';
+    public const DIV_NONE = 'None'; //wtf?
 
     use HasSymbol;
 
@@ -26,7 +24,7 @@ class Dividend extends Attribute implements DividendInterface
 
     public function getExDate(): \DateTime
     {
-        switch($type = $this->getType()) {
+        switch ($type = $this->getType()) {
             case self::DIV_DAILY_ACCRUAL:
                 return new \DateTime($this->get('PayDate'));
             case self::DIV_LT_CG:

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace TotalReturn\Api;
 
@@ -18,7 +18,6 @@ class EndpointIterator implements \Iterator
 
     /** @var mixed */
     protected $current;
-
 
     public function __construct($url)
     {
@@ -62,7 +61,7 @@ class EndpointIterator implements \Iterator
     public function toArray(): array
     {
         $ret = [];
-        foreach($this as $obj) {
+        foreach ($this as $obj) {
             $ret[] = $obj;
         }
         return $ret;
@@ -80,7 +79,7 @@ class EndpointIterator implements \Iterator
      * @param string $class
      * @return static
      */
-    public function setClass(string $class): EndpointIterator
+    public function setClass(string $class): self
     {
         $this->class = $class;
         return $this;

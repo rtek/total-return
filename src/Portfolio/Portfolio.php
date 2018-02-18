@@ -1,12 +1,12 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace TotalReturn\Portfolio;
 
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
 use TotalReturn\Api\Iex\Dividend;
-use TotalReturn\MarketData;
 use TotalReturn\Market\Symbol;
+use TotalReturn\MarketData;
 
 class Portfolio
 {
@@ -42,7 +42,7 @@ class Portfolio
 
     public function withdraw(float $amount)
     {
-        if($amount > $this->getPosition($this->cash)) {
+        if ($amount > $this->getPosition($this->cash)) {
             throw new \LogicException('Cannot withdraw more than available cash');
         }
 
@@ -53,7 +53,7 @@ class Portfolio
     public function buyQuantity(Symbol $symbol, float $qty): float
     {
         $price = $this->marketData->getClose($symbol, $this->timeline->today());
-        $amount = round($price * $qty,2);
+        $amount = round($price * $qty, 2);
 
         $this->buyAmount($symbol, $amount);
         return $amount;
@@ -73,7 +73,7 @@ class Portfolio
     public function sellQuantity(Symbol $symbol, float $qty): float
     {
         $price = $this->marketData->getClose($symbol, $this->timeline->today());
-        $amount = round($price * $qty,2);
+        $amount = round($price * $qty, 2);
 
         $this->sellAmount($symbol, $amount);
         return $amount;
@@ -89,7 +89,6 @@ class Portfolio
         return $qty;
     }
 
-
     public function flatten(Symbol $symbol): float
     {
         $pos = $this->getPosition($symbol);
@@ -103,7 +102,7 @@ class Portfolio
 
     protected function adjustPosition(Symbol $symbol, float $qty, float $price, string $reason): void
     {
-        if(!array_key_exists($ticker = $symbol->getTicker(), $this->position)) {
+        if (!array_key_exists($ticker = $symbol->getTicker(), $this->position)) {
             $this->position[$ticker] = 0;
         }
 
@@ -112,11 +111,11 @@ class Portfolio
         $this->position[$ticker] += $qty;
     }
 
-    public function forward()
+    public function forward(): void
     {
         $today = $this->timeline->today();
 
-        foreach($this->position as $ticker => $pos) {
+        foreach ($this->position as $ticker => $pos) {
             $symbol = Symbol::lookup($ticker);
 
             if ($symbol->hasDividends() && $dividend = $this->marketData->findDividend($symbol, $today)) {
@@ -124,9 +123,8 @@ class Portfolio
             }
         }
 
-        foreach($this->dividends as $i => $dividend) {
+        foreach ($this->dividends as $i => $dividend) {
             if ($dividend->getPaymentDate() == $today) {
-
                 $price = $this->marketData->getClose($dividend->getSymbol(), $today);
                 $this->adjustPosition($dividend->getSymbol(), $dividend->getAmount() * $this->getPosition($symbol) / $price, $price, 'Dividend re-invest');
 
@@ -137,7 +135,7 @@ class Portfolio
         $this->timeline->forward();
     }
 
-    public function forwardTo(\DateTime $to)
+    public function forwardTo(\DateTime $to): void
     {
         while ($this->timeline->today() < $to) {
             $this->forward();
