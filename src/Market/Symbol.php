@@ -24,9 +24,14 @@ class Symbol
         return stripos($this->ticker, '$') !== 0;
     }
 
+    public function hasSplits(): bool
+    {
+        return $this->hasDividends() && !$this->isMutualFund();
+    }
+
     public function isMutualFund(): bool
     {
-        return strtoupper(substr($this->ticker, -1)) === 'X';
+        return strlen($this->ticker) === 5 && strtoupper(substr($this->ticker, -1)) === 'X';
     }
 
     public function __toString()

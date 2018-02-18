@@ -4,6 +4,7 @@ namespace TotalReturn\Portfolio;
 
 use PHPUnit\Framework\TestCase;
 use TotalReturn\AppTrait;
+use TotalReturn\Logger;
 use TotalReturn\Market\Symbol;
 
 class PortfolioTest extends TestCase
@@ -21,6 +22,18 @@ class PortfolioTest extends TestCase
 
         //total return calcs make different assumptions about when the divs are reinvested
         $this->assertEquals(14680.00, round($portfolio->getValue(), -1));
+    }
+
+    public function testSplits(): void
+    {
+        $portfolio = new Portfolio(new \DateTime('2015-02-05'), $md = $this->getMarketData());
+
+        $portfolio->deposit($basis = 10000);
+        $portfolio->buyAmount($vxx = Symbol::lookup('VXX'), $basis);
+        $portfolio->forwardTo(new \DateTime('2018-02-18'));
+        $portfolio->flatten($vxx);
+
+        $this->assertEquals(800.00, round($portfolio->getValue(), -1));
     }
 
     public function testRebalance(): void

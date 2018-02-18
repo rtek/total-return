@@ -7,6 +7,8 @@ use Psr\Log\NullLogger;
 use TotalReturn\Api\Av\Client as AvClient;
 use TotalReturn\Api\Iex\Client as IexClient;
 use TotalReturn\Api\Xignite\Client as XigniteClient;
+use TotalReturn\Api\Xignite\Split;
+use TotalReturn\Market\DividendInterface;
 use TotalReturn\Market\Symbol;
 
 class MarketData
@@ -115,7 +117,7 @@ class MarketData
         return $daily;
     }
 
-    public function findDividend(Symbol $symbol, \DateTime $exDate)
+    public function findDividend(Symbol $symbol, \DateTime $exDate): ?DividendInterface
     {
         $this->updateDividends($symbol);
 
@@ -138,6 +140,32 @@ class MarketData
 
             $this->kv->replaceMany($replace);
             $this->kv->replace('dividend-update', $ticker, date('Y-m-d'));
+        }
+    }
+
+    public function findSplit(Symbol $symbol, \DateTime $exDate): ?Split
+    {
+        $this->updateSplits($symbol);
+
+        return $this->kv->get("split-$symbol", $exDate->format('Y-m-d')) ?? null;
+    }
+
+    protected function updateSplits(Symbol $symbol): void
+    {
+        $lastUpdated = new \DateTime($this->kv->get('split-update', $ticker = $symbol->getTicker()) ?? 'today -1 day');
+
+        if ($lastUpdated < new \DateTime('today')) {
+            $this->logger->debug("Fetching splits for $ticker");
+
+            $splits = $this->xig->getSplits($ticker);
+
+            $replace = [];
+            foreach ($splits as $d) {
+                $replace[] = ['ns' => "split-$ticker", 'id' => $d->getExDate()->format('Y-m-d'), 'value' => $d];
+            }
+
+            $this->kv->replaceMany($replace);
+            $this->kv->replace('split-update', $ticker, date('Y-m-d'));
         }
     }
 }

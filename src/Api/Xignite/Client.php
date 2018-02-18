@@ -59,6 +59,32 @@ class Client
         }, $json['Dividends']);
     }
 
+    /**
+     * @param string $ticker
+     * @return Dividend[]
+     */
+    public function getSplits(string $ticker): array
+    {
+        $resp = $this->client->get('xGlobalHistorical.json/GetSplitHistory', [
+            RequestOptions::QUERY => [
+                'IdentifierType' => 'Symbol',
+                'Identifier' => $ticker,
+                'StartDate' => '1/1/1900',
+                'EndDate' => date('m/d/y'),
+                '_token' => $this->token,
+                '_token_userid' => $this->userId,
+                '_' => strtotime('now'),
+            ],
+        ]);
+
+        $symbol = Symbol::lookup($ticker);
+        $json = $this->extractJson($resp);
+
+        return array_map(function ($item) use ($symbol) {
+            return new Split($symbol, $item);
+        }, $json['Splits']);
+    }
+
     protected function extractJson(ResponseInterface $resp)
     {
         if ($resp->getStatusCode() !== 200) {

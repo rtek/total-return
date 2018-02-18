@@ -149,6 +149,13 @@ class Portfolio
         foreach ($this->position as $ticker => $pos) {
             $symbol = Symbol::lookup($ticker);
 
+            if($symbol->hasSplits() && $split = $this->marketData->findSplit($symbol, $today)) {
+                $ratio = $split->getRatio();
+                $pos = $this->getPosition($symbol);
+                $this->adjustPosition($symbol, $pos * $ratio - $pos, 0.0, sprintf('Split %.2f x %.2f = %.2f', $pos, $ratio, $pos * $ratio));
+            }
+
+
             if ($symbol->hasDividends() && $dividend = $this->marketData->findDividend($symbol, $today)) {
                 $this->dividends[] = new Dividend($dividend, $this->getPosition($symbol));
             }

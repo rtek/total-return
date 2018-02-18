@@ -21,7 +21,7 @@ class ServiceFactory implements FactoryInterface
 
         switch ($name) {
             case Service::ALPHAVANTAGE_CLIENT:
-                return new AvClient($this->getConfig('av', 'key'));
+                return new AvClient($this->getConfig('alphavantage', 'key'));
             case Service::IEX_CLIENT:
                 return new IexClient();
             case Service::XIGNITE_CLIENT:
@@ -35,13 +35,7 @@ class ServiceFactory implements FactoryInterface
                     $ct->get(Service::XIGNITE_CLIENT)
                 );
             case Service::DBAL_CONNECTION:
-                return DriverManager::getConnection([
-                    'driver' => 'pdo_mysql',
-                    'host' => '127.0.0.1',
-                    'user' => 'root',
-                    'password' => 'pass',
-                    'dbname' => 'total_return',
-                ]);
+                return DriverManager::getConnection($this->getConfig('dbal_connection'));
             case Service::KEY_VALUE:
                 return new KeyValue($ct->get(Service::DBAL_CONNECTION));
         }

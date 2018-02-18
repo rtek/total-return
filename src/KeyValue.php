@@ -78,9 +78,11 @@ class KeyValue
             );
         }, $items);
 
-        $this->conn->executeQuery('replace into key_values values ' . implode(',', $values));
-        //just nuke the cache to avoid getting clever w/ too much data
-        $this->cache = [];
+        if(count($values) > 0 ) {
+            $this->conn->executeQuery('replace into key_values values ' . implode(',', $values));
+            //just nuke the cache to avoid getting clever w/ too much data
+            $this->cache = [];
+        }
     }
 
     protected function find(string $ns, string $id)
