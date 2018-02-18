@@ -25,12 +25,18 @@ class Portfolio
     /** @var Symbol */
     protected $cash;
 
+    /** @var array */
+    protected $allocation;
+
     public function __construct(\DateTime $startDay, MarketData $marketData)
     {
         $this->marketData = $marketData;
         $this->timeline = new Timeline($startDay, $marketData->getTradingDaysAfter($startDay));
         $this->logger = new NullLogger();
         $this->cash = Symbol::USD();
+        $this->allocation = [
+            $this->cash->getTicker() => 1
+        ];
     }
 
     public function deposit(float $amount)
@@ -86,6 +92,11 @@ class Portfolio
         $this->adjustPosition($symbol, -$qty, $price, "Sell $symbol");
         $this->deposit($amount);
         return $qty;
+    }
+
+    public function tradeAmount(Symbol $symbol, float $amount): float
+    {
+        return $amount >= 0 ? $this->buyAmount($symbol, $amount) : $this->sellAmount($symbol, -$amount);
     }
 
     public function flatten(Symbol $symbol): float
@@ -147,9 +158,38 @@ class Portfolio
             if ($dividend->getPaymentDate() == $today) {
                 $price = $this->marketData->getClose($symbol = $dividend->getSymbol(), $today);
                 $amt = $dividend->getAmount();
-                $this->adjustPosition($symbol, $amt * $dividend->getPosition() / $price, $price, "Dividend re-invest @ $amt");
+                $pos = $dividend->getPosition();
+                $this->adjustPosition($symbol, $amt * $pos / $price, $price, sprintf('Dividend re-invest @ %.2f x %.4f = $%.2f', $pos, $amt, $pos * $amt));
 
                 unset($this->dividends[$i]);
+            }
+        }
+
+        $values = $this->getValues();
+        $total = array_sum($values);
+        $rebalance = false;
+        $deltas = [];
+        foreach($this->allocation as $ticker => $target) {
+
+            //skip cash
+            if($ticker === $this->cash->getTicker()) {
+                continue;
+            }
+
+            $value = $values[$ticker] ?? 0;
+
+            $deltas[$ticker] = $target * $total - $value;
+
+            if (abs($target - $value / $total) >= 0.05) {
+                $rebalance = true;
+            }
+        }
+
+        if($rebalance) {
+            //sell then buy
+            asort($deltas);
+            foreach ($deltas as $ticker => $delta) {
+                $this->tradeAmount(Symbol::lookup($ticker), $delta);
             }
         }
 
@@ -161,5 +201,10 @@ class Portfolio
         while (!$this->timeline->isEnd() && $this->timeline->today() < $to) {
             $this->forward();
         }
+    }
+
+    public function setTargetAllocation(array $allocation)
+    {
+        $this->allocation = $allocation;
     }
 }

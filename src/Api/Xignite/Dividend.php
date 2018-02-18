@@ -12,6 +12,7 @@ class Dividend extends Attribute implements DividendInterface
     public const DIV_DAILY_ACCRUAL = 'DailyAccrualFund';
     public const DIV_LT_CG = 'CapitalGainLongTerm';
     public const DIV_ST_CG = 'CapitalGainShortTerm';
+    public const DIV_ORDINARY = 'OrdinaryDividend';
     public const DIV_NONE = 'None'; //wtf?
 
     use HasSymbol;
@@ -29,6 +30,7 @@ class Dividend extends Attribute implements DividendInterface
                 return new \DateTime($this->get('PayDate'));
             case self::DIV_LT_CG:
             case self::DIV_ST_CG:
+            case self::DIV_ORDINARY:
             case self::DIV_NONE:
                 return new \DateTime($this->get('ExDate'));
         }

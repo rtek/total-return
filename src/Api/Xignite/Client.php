@@ -42,7 +42,7 @@ class Client
         $resp = $this->client->get('xGlobalHistorical.json/GetCashDividendHistory', [
             RequestOptions::QUERY => [
             'IdentifierType' => 'Symbol',
-            'Identifier' => 'vbmfx',
+            'Identifier' => $ticker,
             'StartDate' => '1/1/1900',
             'EndDate' => date('m/d/y'),
             '_token' => $this->token,

@@ -129,11 +129,7 @@ class MarketData
         if ($lastUpdated < new \DateTime('today')) {
             $this->logger->debug("Fetching dividends for $ticker");
 
-            if ($symbol->isMutualFund()) {
-                $dividends = $this->xig->getDividends($ticker);
-            } else {
-                $dividends = $this->iex->getDividends($ticker, '5y');
-            }
+            $dividends = $this->xig->getDividends($ticker);
 
             $replace = [];
             foreach ($dividends as $d) {
