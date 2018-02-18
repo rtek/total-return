@@ -6,6 +6,7 @@ use Doctrine\DBAL\Connection;
 use TotalReturn\Api\Av\Client as AvClient;
 use TotalReturn\Api\Iex\Client as IexClient;
 use TotalReturn\Api\Xignite\Client as XigniteClient;
+use TotalReturn\KeyValue\Store;
 
 class Service
 {
@@ -14,7 +15,7 @@ class Service
     public const IEX_CLIENT = IexClient::class;
     public const MARKET_DATA = MarketData::class;
     public const DBAL_CONNECTION = Connection::class;
-    public const KEY_VALUE = KeyValue::class;
+    public const KEY_VALUE = Store::class;
     public const XIGNITE_CLIENT = XigniteClient::class;
 
     public function __invoke()

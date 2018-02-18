@@ -16,7 +16,6 @@ class MarketDataTest extends TestCase
 
         /** @var MarketData $md */
         $md = $sm->get(Service::MARKET_DATA);
-        $md->setLogger($logger = new Logger());
 
         $this->assertNotNull($md->findDividend(Symbol::lookup('AAPL'), new \DateTime('2018-02-09')));
 

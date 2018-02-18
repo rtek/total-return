@@ -5,11 +5,16 @@ namespace TotalReturn;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
 use TotalReturn\Api\Av\Client as AvClient;
+use TotalReturn\Api\Av\Daily;
 use TotalReturn\Api\Iex\Client as IexClient;
 use TotalReturn\Api\Xignite\Client as XigniteClient;
 use TotalReturn\Api\Xignite\Split;
+use TotalReturn\KeyValue\Ns;
+use TotalReturn\KeyValue\Store;
 use TotalReturn\Market\DividendInterface;
 use TotalReturn\Market\Symbol;
+use TotalReturn\KeyValue\Kv;
+
 
 class MarketData
 {
@@ -18,7 +23,7 @@ class MarketData
     public const TRADEDAY_TICKER = 'SPY';
     public const TRADEDAY_DAY = '2010-01-05';
 
-    /** @var KeyValue */
+    /** @var Store */
     protected $kv;
 
     /** @var AvClient */
@@ -32,7 +37,7 @@ class MarketData
 
     protected $tradingDays;
 
-    public function __construct(KeyValue $kv, AvClient $av, IexClient $iex, XigniteClient $xig)
+    public function __construct(Store $kv, AvClient $av, IexClient $iex, XigniteClient $xig)
     {
         $this->kv = $kv;
         $this->av = $av;
@@ -50,10 +55,11 @@ class MarketData
     public function getTradingDays(): array
     {
         if ($this->tradingDays === null) {
-            $this->getDaily(new Symbol(self::TRADEDAY_TICKER), new \DateTime(self::TRADEDAY_DAY));
+            $symbol = Symbol::lookup(self::TRADEDAY_TICKER);
+            $this->getDaily($symbol, new \DateTime(self::TRADEDAY_DAY));
             $this->tradingDays = array_map(function ($id) {
                 return new \DateTime($id);
-            }, $this->kv->getIds('daily-'.self::TRADEDAY_TICKER));
+            }, $this->kv->getIds(Ns::daily($symbol)));
         }
 
         return $this->tradingDays;
@@ -86,23 +92,21 @@ class MarketData
         }
 
         $daily = $this->getDaily($symbol, $day);
-        return (float)$daily['4. close'];
+        return $daily->getClose();
     }
 
-    protected function getDaily(Symbol $symbol, \DateTime $day): array
+    protected function getDaily(Symbol $symbol, \DateTime $day): Daily
     {
-        $ticker = $symbol->getTicker();
-
-        if (!$this->kv->has($ns = "daily-$ticker", $id = $day->format('Y-m-d'))) {
+        if (!$this->kv->has($ns = Ns::daily($symbol), $id = Ns::id($day))) {
             //100 datapoints is not 100 trade days but close enough
             $size = $day > new \DateTime('now -100 days') ? 'compact' : 'full';
 
             $this->logger->debug("Fetching daily $size for $symbol");
-            $json = $this->av->getDaily($ticker, ['outputsize' => $size]);
+            $json = $this->av->getDaily($symbol->getTicker(), ['outputsize' => $size]);
 
             $replace = [];
             foreach ($json['Time Series (Daily)'] as $k => $v) {
-                $replace[] = ['ns' => $ns, 'id' => $k, 'value' => $v];
+                $replace[] = new Kv($ns, $k, new Daily($v));
             }
 
             $this->kv->replaceMany($replace);
@@ -110,8 +114,8 @@ class MarketData
 
         $daily = $this->kv->get($ns, $id);
 
-        if (!is_array($daily)) {
-            throw new \LogicException("$ns $id did not return an array");
+        if (!$daily instanceof Daily) {
+            throw new \LogicException("$ns $id did not return Daily");
         }
 
         return $daily;
@@ -121,25 +125,28 @@ class MarketData
     {
         $this->updateDividends($symbol);
 
-        return $this->kv->get("dividend-$symbol", $exDate->format('Y-m-d')) ?? null;
+        return $this->kv->get(Ns::dividend($symbol), Ns::id($exDate)) ?? null;
     }
 
     protected function updateDividends(Symbol $symbol): void
     {
-        $lastUpdated = new \DateTime($this->kv->get('dividend-update', $ticker = $symbol->getTicker()) ?? 'today -1 day');
+
+        $lastUpdated = new \DateTime($this->kv->get(Ns::dividendUpdate(), Ns::id($symbol)) ?? 'today -1 day');
 
         if ($lastUpdated < new \DateTime('today')) {
+
+            $ticker = $symbol->getTicker();
             $this->logger->debug("Fetching dividends for $ticker");
 
             $dividends = $this->xig->getDividends($ticker);
 
             $replace = [];
             foreach ($dividends as $d) {
-                $replace[] = ['ns' => "dividend-$ticker", 'id' => $d->getExDate()->format('Y-m-d'), 'value' => $d];
+                $replace[] = new Kv(Ns::dividend($symbol), Ns::id($d->getExDate()), $d);
             }
 
             $this->kv->replaceMany($replace);
-            $this->kv->replace('dividend-update', $ticker, date('Y-m-d'));
+            $this->kv->replace(new Kv(Ns::dividendUpdate(), Ns::id($symbol), date('Y-m-d')));
         }
     }
 
@@ -147,25 +154,26 @@ class MarketData
     {
         $this->updateSplits($symbol);
 
-        return $this->kv->get("split-$symbol", $exDate->format('Y-m-d')) ?? null;
+        return $this->kv->get(Ns::split($symbol), Ns::id($exDate)) ?? null;
     }
 
     protected function updateSplits(Symbol $symbol): void
     {
-        $lastUpdated = new \DateTime($this->kv->get('split-update', $ticker = $symbol->getTicker()) ?? 'today -1 day');
+        $lastUpdated = new \DateTime($this->kv->get(Ns::splitUpdate(), Ns::id($symbol)) ?? 'today -1 day');
 
         if ($lastUpdated < new \DateTime('today')) {
+            $ticker = $symbol->getTicker();
             $this->logger->debug("Fetching splits for $ticker");
 
             $splits = $this->xig->getSplits($ticker);
 
             $replace = [];
             foreach ($splits as $d) {
-                $replace[] = ['ns' => "split-$ticker", 'id' => $d->getExDate()->format('Y-m-d'), 'value' => $d];
+                $replace[] = new Kv(Ns::split($symbol), Ns::id($d->getExDate()), $d);
             }
 
             $this->kv->replaceMany($replace);
-            $this->kv->replace('split-update', $ticker, date('Y-m-d'));
+            $this->kv->replace(new Kv(Ns::splitUpdate(), Ns::id($symbol), date('Y-m-d')));
         }
     }
 }

@@ -1,11 +1,11 @@
 <?php declare(strict_types=1);
 
-namespace TotalReturn;
+namespace TotalReturn\KeyValue;
 
 use Doctrine\DBAL\Connection;
 use Psr\Log\LoggerAwareTrait;
 
-class KeyValue
+class Store
 {
     use LoggerAwareTrait;
 
@@ -44,39 +44,44 @@ class KeyValue
         return $this->cache[$key] !== null;
     }
 
-    public function set(string $ns, string $id, $value): void
+    public function set(Kv $kv): void
     {
+
+        $ns = $kv->getNamespace();
+        $id = $kv->getId();
+        $value = $kv->getValue();
+
         if ($this->has($ns, $id)) {
             $oldValue = $this->get($ns, $id);
             if ($oldValue !== $value) {
-                $this->replace($ns, $id, $value);
+                $this->replace($kv);
             }
         } else {
-            $this->replace($ns, $id, $value);
+            $this->replace($kv);
         }
     }
 
-    public function replace(string $ns, string $id, $value): void
+    public function replace(Kv $kv): void
     {
         $this->replace->execute([
-            'namespace' => $ns,
-            'id' => $id,
-            'data' => serialize($value),
+            'namespace' => $kv->getNamespace(),
+            'id' => $kv->getId(),
+            'data' => serialize($value = $kv->getValue()),
         ]);
 
-        $this->cache["$ns-$id"] = $value;
+        $this->cache[(string)$kv] = $value;
     }
 
-    public function replaceMany(array $items): void
+    public function replaceMany(array $kvs): void
     {
-        $values = array_map(function ($item) {
+        $values = array_map(function (Kv $kv) {
             return sprintf(
                 '(%s,%s,%s)',
-                $this->conn->quote($item['ns']),
-                $this->conn->quote($item['id']),
-                $this->conn->quote(serialize($item['value']))
+                $this->conn->quote($kv->getNamespace()),
+                $this->conn->quote($kv->getId()),
+                $this->conn->quote(serialize($kv->getValue()))
             );
-        }, $items);
+        }, $kvs);
 
         if(count($values) > 0 ) {
             $this->conn->executeQuery('replace into key_values values ' . implode(',', $values));

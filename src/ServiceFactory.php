@@ -7,6 +7,7 @@ use Interop\Container\ContainerInterface;
 use TotalReturn\Api\Av\Client as AvClient;
 use TotalReturn\Api\Iex\Client as IexClient;
 use TotalReturn\Api\Xignite\Client as XigniteClient;
+use TotalReturn\KeyValue\Store;
 use Zend\ServiceManager\Exception\ServiceNotFoundException;
 use Zend\ServiceManager\Factory\FactoryInterface;
 
@@ -37,7 +38,7 @@ class ServiceFactory implements FactoryInterface
             case Service::DBAL_CONNECTION:
                 return DriverManager::getConnection($this->getConfig('dbal_connection'));
             case Service::KEY_VALUE:
-                return new KeyValue($ct->get(Service::DBAL_CONNECTION));
+                return new Store($ct->get(Service::DBAL_CONNECTION));
         }
 
         throw new ServiceNotFoundException("Could not resolve service '$name'");
