@@ -1,11 +1,12 @@
 <?php
 
 
-namespace TotalReturn\Iex;
+namespace TotalReturn\Api\Iex;
 
 use GuzzleHttp\Client as Guzzle;
 use GuzzleHttp\RequestOptions;
 use Psr\Http\Message\ResponseInterface;
+use TotalReturn\Market\Symbol;
 
 class Client
 {
@@ -35,10 +36,21 @@ class Client
         return $this->extractJson($resp);
     }
 
-    public function getDividends(string $symbol, $time): array
+    /**
+     * @param string $symbol
+     * @param string $period
+     * @return Dividend[]
+     */
+    public function getDividends(string $symbol, string $period): array
     {
-        $resp = $this->client->get("stock/$symbol/dividends/$time");
-        return $this->extractJson($resp);
+        $resp = $this->client->get("stock/$symbol/dividends/$period");
+
+        $symbol = new Symbol($symbol);
+
+        return array_map(function($item) use ($symbol) {
+            return new Dividend($symbol, $item);
+        }, $this->extractJson($resp));
+
     }
 
     public function getChart(string $symbol, $time): array

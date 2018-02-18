@@ -1,7 +1,7 @@
 <?php
 
 
-namespace TotalReturn\Av;
+namespace TotalReturn\Api\Av;
 
 use GuzzleHttp\Client as Guzzle;
 use GuzzleHttp\RequestOptions;

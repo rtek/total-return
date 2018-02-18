@@ -4,6 +4,10 @@ namespace TotalReturn;
 
 return [
     'av' => [
-        'key' => ''
-    ]
+        'key' => '',
+    ],
+    'xignite' => [
+        'token' => '',
+        'user_id' => '',
+    ],
 ];

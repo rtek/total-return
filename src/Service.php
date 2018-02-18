@@ -3,8 +3,9 @@
 namespace TotalReturn;
 
 use Doctrine\DBAL\Connection;
-use TotalReturn\Av\Client as AvClient;
-use TotalReturn\Iex\Client as IexClient;
+use TotalReturn\Api\Av\Client as AvClient;
+use TotalReturn\Api\Iex\Client as IexClient;
+use TotalReturn\Api\Xignite\Client as XigniteClient;
 
 class Service
 {
@@ -14,6 +15,7 @@ class Service
     const MARKET_DATA = MarketData::class;
     const DBAL_CONNECTION = Connection::class;
     const KEY_VALUE = KeyValue::class;
+    const XIGNITE_CLIENT = XigniteClient::class;
 
     public function __invoke()
     {

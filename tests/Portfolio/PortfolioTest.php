@@ -8,6 +8,7 @@ use TotalReturn\AppTrait;
 use TotalReturn\Logger;
 use TotalReturn\MarketData;
 use TotalReturn\Service;
+use TotalReturn\Market\Symbol;
 use Zend\ConfigAggregator\PhpFileProvider;
 
 class PortfolioTest extends TestCase
@@ -23,15 +24,19 @@ class PortfolioTest extends TestCase
         $md = $sm->get(Service::MARKET_DATA);
         $md->setLogger($logger = new Logger());
 
-        $portfolio = new Portfolio(new \DateTime('2017-01-01'), $md);
+        $portfolio = new Portfolio(new \DateTime('2017-02-01'), $md);
 
         $portfolio->setLogger($logger);
 
-        $portfolio->deposit(100000);
-        $portfolio->buy('AAPL', 100);
-        $portfolio->forwardTo($md->getLastCloseDay());
-        $portfolio->sell('AAPL', 100);
+        $portfolio->deposit($basis = 10000);
+        $portfolio->buyAmount($aapl = Symbol::lookup('PTTRX'), $basis);
+        $portfolio->forwardTo(new \DateTime('2018-02-01'));
+        $portfolio->flatten($aapl);
 
-        var_dump($portfolio->getPosition(Portfolio::CASH));
+        $value = $portfolio->getPosition(Symbol::lookup('$USD'));
+
+        var_dump($value, $basis);
+
+        var_dump($value / $basis);
     }
 }

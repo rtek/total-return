@@ -83,6 +83,8 @@ class KeyValue
 
 
         $this->conn->executeQuery('replace into key_values values ' . implode(',',$values));
+        //just nuke the cache to avoid getting clever w/ too much data
+        $this->cache = [];
     }
 
 
