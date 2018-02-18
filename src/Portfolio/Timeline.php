@@ -40,13 +40,9 @@ class Timeline
         $this->index++;
     }
 
-    public function forwardTo(\DateTime $to): void
+    public function isEnd(): bool
     {
-        $end = $this->findNearestIndex($to);
-
-        for (; $this->index < $end;) {
-            $this->forward();
-        }
+        return $this->index === count($this->days) - 1;
     }
 
     protected function findNearestIndex(\DateTime $day)

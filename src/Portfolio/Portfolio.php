@@ -4,7 +4,6 @@ namespace TotalReturn\Portfolio;
 
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
-use TotalReturn\Api\Iex\Dividend;
 use TotalReturn\Market\Symbol;
 use TotalReturn\MarketData;
 
@@ -31,7 +30,7 @@ class Portfolio
         $this->marketData = $marketData;
         $this->timeline = new Timeline($startDay, $marketData->getTradingDaysAfter($startDay));
         $this->logger = new NullLogger();
-        $this->cash = Symbol::lookup('$USD');
+        $this->cash = Symbol::USD();
     }
 
     public function deposit(float $amount)
@@ -100,13 +99,34 @@ class Portfolio
         return $this->position[$symbol->getTicker()] ?? 0;
     }
 
+    public function getValues(): array
+    {
+        $today = $this->timeline->today();
+        $values = [];
+        foreach($this->position as $ticker => $qty) {
+            $price = $ticker === $this->cash->getTicker() ? 1 : $this->marketData->getClose(Symbol::lookup($ticker), $today);
+            $values[$ticker] = round($qty * $price,2);
+        }
+
+        foreach($this->dividends as $dividend) {
+            $values[$this->cash->getTicker()] += round($dividend->getAmount() * $dividend->getPosition(),2);
+        }
+
+        return $values;
+    }
+
+    public function getValue(): float
+    {
+        return array_sum($this->getValues());
+    }
+
     protected function adjustPosition(Symbol $symbol, float $qty, float $price, string $reason): void
     {
         if (!array_key_exists($ticker = $symbol->getTicker(), $this->position)) {
             $this->position[$ticker] = 0;
         }
 
-        $this->logger->info(sprintf('Adjust: %+10.2f %-5s @ %7.2f %s', $qty, $symbol, $price, $reason));
+        $this->logger->info(sprintf('Adjust: %+10.2f %-5s @ %7.2f %s %s', $qty, $symbol, $price, $this->timeline->today()->format('Y-m-d'), $reason));
 
         $this->position[$ticker] += $qty;
     }
@@ -119,14 +139,15 @@ class Portfolio
             $symbol = Symbol::lookup($ticker);
 
             if ($symbol->hasDividends() && $dividend = $this->marketData->findDividend($symbol, $today)) {
-                $this->dividends[] = $dividend;
+                $this->dividends[] = new Dividend($dividend, $this->getPosition($symbol));
             }
         }
 
         foreach ($this->dividends as $i => $dividend) {
             if ($dividend->getPaymentDate() == $today) {
-                $price = $this->marketData->getClose($dividend->getSymbol(), $today);
-                $this->adjustPosition($dividend->getSymbol(), $dividend->getAmount() * $this->getPosition($symbol) / $price, $price, 'Dividend re-invest');
+                $price = $this->marketData->getClose($symbol = $dividend->getSymbol(), $today);
+                $amt = $dividend->getAmount();
+                $this->adjustPosition($symbol, $amt * $dividend->getPosition() / $price, $price, "Dividend re-invest @ $amt");
 
                 unset($this->dividends[$i]);
             }
@@ -137,7 +158,7 @@ class Portfolio
 
     public function forwardTo(\DateTime $to): void
     {
-        while ($this->timeline->today() < $to) {
+        while (!$this->timeline->isEnd() && $this->timeline->today() < $to) {
             $this->forward();
         }
     }

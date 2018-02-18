@@ -89,12 +89,14 @@ class MarketData
 
     protected function getDaily(Symbol $symbol, \DateTime $day): array
     {
-        if (!$this->kv->has($ns = "daily-$symbol", $id = $day->format('Y-m-d'))) {
+        $ticker = $symbol->getTicker();
+
+        if (!$this->kv->has($ns = "daily-$ticker", $id = $day->format('Y-m-d'))) {
             //100 datapoints is not 100 trade days but close enough
             $size = $day > new \DateTime('now -100 days') ? 'compact' : 'full';
 
             $this->logger->debug("Fetching daily $size for $symbol");
-            $json = $this->av->getDaily($symbol, ['outputsize' => $size]);
+            $json = $this->av->getDaily($ticker, ['outputsize' => $size]);
 
             $replace = [];
             foreach ($json['Time Series (Daily)'] as $k => $v) {
@@ -122,24 +124,24 @@ class MarketData
 
     protected function updateDividends(Symbol $symbol): void
     {
-        $lastUpdated = new \DateTime($this->kv->get('dividend-update', $symbol) ?? 'today -1 day');
+        $lastUpdated = new \DateTime($this->kv->get('dividend-update', $ticker = $symbol->getTicker()) ?? 'today -1 day');
 
         if ($lastUpdated < new \DateTime('today')) {
-            $this->logger->debug("Fetching dividends for $symbol");
+            $this->logger->debug("Fetching dividends for $ticker");
 
             if ($symbol->isMutualFund()) {
-                $dividends = $this->xig->getDividends($symbol);
+                $dividends = $this->xig->getDividends($ticker);
             } else {
-                $dividends = $this->iex->getDividends($symbol, '5y');
+                $dividends = $this->iex->getDividends($ticker, '5y');
             }
 
             $replace = [];
             foreach ($dividends as $d) {
-                $replace[] = ['ns' => "dividend-$symbol", 'id' => $d->getExDate()->format('Y-m-d'), 'value' => $d];
+                $replace[] = ['ns' => "dividend-$ticker", 'id' => $d->getExDate()->format('Y-m-d'), 'value' => $d];
             }
 
             $this->kv->replaceMany($replace);
-            $this->kv->replace('dividend-update', $symbol, date('Y-m-d'));
+            $this->kv->replace('dividend-update', $ticker, date('Y-m-d'));
         }
     }
 }

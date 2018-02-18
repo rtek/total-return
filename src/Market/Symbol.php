@@ -4,6 +4,8 @@ namespace TotalReturn\Market;
 
 class Symbol
 {
+    const TICKER_USD = '$USD';
+
     /** @var string */
     protected $ticker;
 
@@ -41,5 +43,10 @@ class Symbol
             self::$symbols[$ticker] = new self($ticker);
         }
         return self::$symbols[$ticker];
+    }
+
+    public static function USD(): self
+    {
+        return self::lookup(self::TICKER_USD);
     }
 }

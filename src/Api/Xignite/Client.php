@@ -18,7 +18,7 @@ class Client
     /** @var string */
     protected $userId;
 
-    public function __construct(string $token, string $userId)
+    public function __construct(string $token, int $userId)
     {
         $this->token = $token;
         $this->userId = $userId;

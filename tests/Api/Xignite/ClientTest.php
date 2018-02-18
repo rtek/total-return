@@ -19,6 +19,8 @@ class ClientTest extends TestCase
 
         $dividends = $client->getDividends('VBMFX');
 
+        $this->assertGreaterThan(0, count($dividends));
+
         foreach ($dividends as $dividend) {
             if ($dividend->getExDate() == new \DateTime('2018-02-01')) {
                 $this->assertEquals(0.02235, round($dividend->getAmount(), 5));
