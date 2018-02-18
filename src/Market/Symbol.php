@@ -4,7 +4,7 @@ namespace TotalReturn\Market;
 
 class Symbol
 {
-    const TICKER_USD = '$USD';
+    public const TICKER_USD = '$USD';
 
     /** @var string */
     protected $ticker;

@@ -35,7 +35,7 @@ class Portfolio
         $this->logger = new NullLogger();
         $this->cash = Symbol::USD();
         $this->allocation = [
-            $this->cash->getTicker() => 1
+            $this->cash->getTicker() => 1,
         ];
     }
 
@@ -114,13 +114,13 @@ class Portfolio
     {
         $today = $this->timeline->today();
         $values = [];
-        foreach($this->position as $ticker => $qty) {
+        foreach ($this->position as $ticker => $qty) {
             $price = $ticker === $this->cash->getTicker() ? 1 : $this->marketData->getClose(Symbol::lookup($ticker), $today);
-            $values[$ticker] = round($qty * $price,2);
+            $values[$ticker] = round($qty * $price, 2);
         }
 
-        foreach($this->dividends as $dividend) {
-            $values[$this->cash->getTicker()] += round($dividend->getAmount() * $dividend->getPosition(),2);
+        foreach ($this->dividends as $dividend) {
+            $values[$this->cash->getTicker()] += round($dividend->getAmount() * $dividend->getPosition(), 2);
         }
 
         return $values;
@@ -169,10 +169,9 @@ class Portfolio
         $total = array_sum($values);
         $rebalance = false;
         $deltas = [];
-        foreach($this->allocation as $ticker => $target) {
-
+        foreach ($this->allocation as $ticker => $target) {
             //skip cash
-            if($ticker === $this->cash->getTicker()) {
+            if ($ticker === $this->cash->getTicker()) {
                 continue;
             }
 
@@ -185,7 +184,7 @@ class Portfolio
             }
         }
 
-        if($rebalance) {
+        if ($rebalance) {
             //sell then buy
             asort($deltas);
             foreach ($deltas as $ticker => $delta) {
@@ -203,7 +202,7 @@ class Portfolio
         }
     }
 
-    public function setTargetAllocation(array $allocation)
+    public function setTargetAllocation(array $allocation): void
     {
         $this->allocation = $allocation;
     }

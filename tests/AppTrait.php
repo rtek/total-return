@@ -10,7 +10,7 @@ trait AppTrait
     /** @var App */
     protected $app;
 
-    protected function tearDown()
+    protected function tearDown(): void
     {
         $this->app = null;
     }
@@ -28,7 +28,7 @@ trait AppTrait
      */
     protected function getApp(): App
     {
-        if(!$this->app) {
+        if (!$this->app) {
             $this->app = $this->createApp();
         }
         return $this->app;

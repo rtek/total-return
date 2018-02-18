@@ -82,6 +82,7 @@ $config = PhpCsFixer\Config::create()
         PhpCsFixer\Finder::create()
             ->in('src')
             ->in('tests')
-    );
+    )
+    ->setCacheFile('data/tmp/cs.cache');
 
 return $config;
