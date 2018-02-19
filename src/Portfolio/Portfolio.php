@@ -6,6 +6,8 @@ use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
 use TotalReturn\Market\Symbol;
 use TotalReturn\MarketData;
+use TotalReturn\Portfolio\Rebalancer\Manual;
+use TotalReturn\Portfolio\Rebalancer\RebalancerInterface;
 
 class Portfolio
 {
@@ -25,8 +27,8 @@ class Portfolio
     /** @var Symbol */
     protected $cash;
 
-    /** @var array */
-    protected $allocation;
+    /** @var RebalancerInterface */
+    protected $rebalancer;
 
     public function __construct(\DateTime $startDay, MarketData $marketData)
     {
@@ -34,9 +36,15 @@ class Portfolio
         $this->timeline = new Timeline($startDay, $marketData->getTradingDaysAfter($startDay));
         $this->logger = new NullLogger();
         $this->cash = Symbol::USD();
-        $this->allocation = [
-            $this->cash->getTicker() => 1,
-        ];
+        $this->rebalancer = new Manual([
+            $this->cash->getTicker() => 1
+        ]);
+    }
+
+    public function setRebalancer(RebalancerInterface $rebalancer)
+    {
+        $this->rebalancer = $rebalancer;
+        return $this;
     }
 
     public function deposit(float $amount)
@@ -172,31 +180,8 @@ class Portfolio
             }
         }
 
-        $values = $this->getValues();
-        $total = array_sum($values);
-        $rebalance = false;
-        $deltas = [];
-        foreach ($this->allocation as $ticker => $target) {
-            //skip cash
-            if ($ticker === $this->cash->getTicker()) {
-                continue;
-            }
-
-            $value = $values[$ticker] ?? 0;
-
-            $deltas[$ticker] = $target * $total - $value;
-
-            if (abs($target - $value / $total) >= 0.05) {
-                $rebalance = true;
-            }
-        }
-
-        if ($rebalance) {
-            //sell then buy
-            asort($deltas);
-            foreach ($deltas as $ticker => $delta) {
-                $this->tradeAmount(Symbol::lookup($ticker), $delta);
-            }
+        if($this->rebalancer->needsRebalance($this)) {
+            $this->rebalance();
         }
 
         $this->timeline->forward();
@@ -209,8 +194,8 @@ class Portfolio
         }
     }
 
-    public function setTargetAllocation(array $allocation): void
+    public function rebalance(): void
     {
-        $this->allocation = $allocation;
+        $this->rebalancer->rebalance($this);
     }
 }

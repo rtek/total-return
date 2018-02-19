@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use TotalReturn\AppTrait;
 use TotalReturn\Logger;
 use TotalReturn\Market\Symbol;
+use TotalReturn\Portfolio\Rebalancer\AbsolutePercent;
 
 class PortfolioTest extends TestCase
 {
@@ -42,12 +43,12 @@ class PortfolioTest extends TestCase
 
         $portfolio = new Portfolio(new \DateTime('2018-01-30'), $md);
 
-        $portfolio->setTargetAllocation([
+        $portfolio->setRebalancer(new AbsolutePercent([
             'VTI'  => 0.35,
             'VXUS' => 0.35,
             'BND'  => 0.28,
             '$USD'  => 0.02,
-        ]);
+        ], 0.05));
 
         $portfolio->deposit(10000);
 
