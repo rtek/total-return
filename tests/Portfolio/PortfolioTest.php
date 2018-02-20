@@ -47,7 +47,6 @@ class PortfolioTest extends TestCase
             'VTI'  => 0.35,
             'VXUS' => 0.35,
             'BND'  => 0.28,
-            '$USD'  => 0.02,
         ], 0.05));
 
         $portfolio->deposit(10000);

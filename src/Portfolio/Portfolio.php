@@ -41,6 +41,11 @@ class Portfolio
         ]);
     }
 
+    public function getCashSymbol(): Symbol
+    {
+        return $this->cash;
+    }
+
     public function setRebalancer(RebalancerInterface $rebalancer)
     {
         $this->rebalancer = $rebalancer;
