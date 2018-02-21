@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace TotalReturn\Portfolio\Rebalancer;
 
@@ -15,7 +15,7 @@ abstract class AbstractRebalancer implements RebalancerInterface
         $this->setAllocation($allocation);
     }
 
-    public function setAllocation(array $allocation)
+    public function setAllocation(array $allocation): void
     {
         $this->allocation = $allocation;
         $total = array_sum($this->allocation);

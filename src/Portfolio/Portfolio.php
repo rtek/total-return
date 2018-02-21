@@ -37,7 +37,7 @@ class Portfolio
         $this->logger = new NullLogger();
         $this->cash = Symbol::USD();
         $this->rebalancer = new Manual([
-            $this->cash->getTicker() => 1
+            $this->cash->getTicker() => 1,
         ]);
     }
 
@@ -155,7 +155,9 @@ class Portfolio
     {
         $values = $this->getValues();
         $total = array_sum($values);
-        return array_map(function($value) use ($total) { return $value / $total; }, $values);
+        return array_map(function ($value) use ($total) {
+            return $value / $total;
+        }, $values);
     }
 
     protected function adjustPosition(Symbol $symbol, float $qty, float $price, string $reason): void
@@ -176,12 +178,11 @@ class Portfolio
         foreach ($this->position as $ticker => $pos) {
             $symbol = Symbol::lookup($ticker);
 
-            if($symbol->hasSplits() && $split = $this->marketData->findSplit($symbol, $today)) {
+            if ($symbol->hasSplits() && $split = $this->marketData->findSplit($symbol, $today)) {
                 $ratio = $split->getRatio();
                 $pos = $this->getPosition($symbol);
                 $this->adjustPosition($symbol, $pos * $ratio - $pos, 0.0, sprintf('Split %.2f x %.2f = %.2f', $pos, $ratio, $pos * $ratio));
             }
-
 
             if ($symbol->hasDividends() && $dividend = $this->marketData->findDividend($symbol, $today)) {
                 $this->dividends[] = new Dividend($dividend, $this->getPosition($symbol));
@@ -199,7 +200,7 @@ class Portfolio
             }
         }
 
-        if($this->rebalancer->needsRebalance($this)) {
+        if ($this->rebalancer->needsRebalance($this)) {
             $this->rebalance();
         }
 

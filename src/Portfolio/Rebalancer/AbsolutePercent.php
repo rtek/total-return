@@ -1,8 +1,6 @@
-<?php
-
+<?php declare(strict_types=1);
 
 namespace TotalReturn\Portfolio\Rebalancer;
-
 
 use TotalReturn\Market\Symbol;
 use TotalReturn\Portfolio\Portfolio;
@@ -25,7 +23,6 @@ class AbsolutePercent extends Manual
     {
         $this->threshold = $threshold;
     }
-
 
     public function needsRebalance(Portfolio $portfolio): bool
     {

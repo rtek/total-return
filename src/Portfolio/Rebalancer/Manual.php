@@ -1,5 +1,4 @@
-<?php
-
+<?php declare(strict_types=1);
 
 namespace TotalReturn\Portfolio\Rebalancer;
 
@@ -30,5 +29,4 @@ class Manual extends AbstractRebalancer
 
         return $deltas;
     }
-
 }

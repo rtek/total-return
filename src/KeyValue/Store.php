@@ -46,7 +46,6 @@ class Store
 
     public function set(Kv $kv): void
     {
-
         $ns = $kv->getNamespace();
         $id = $kv->getId();
         $value = $kv->getValue();
@@ -83,7 +82,7 @@ class Store
             );
         }, $kvs);
 
-        if(count($values) > 0 ) {
+        if (count($values) > 0) {
             $this->conn->executeQuery('replace into key_values values ' . implode(',', $values));
             //just nuke the cache to avoid getting clever w/ too much data
             $this->cache = [];

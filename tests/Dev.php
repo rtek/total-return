@@ -30,6 +30,5 @@ class Dev extends TestCase
         $portfolio->forwardTo(new \DateTime('2018-02-18'));
 
         var_dump($portfolio->getValue());
-
     }
 }

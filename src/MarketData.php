@@ -9,12 +9,11 @@ use TotalReturn\Api\Av\Daily;
 use TotalReturn\Api\Iex\Client as IexClient;
 use TotalReturn\Api\Xignite\Client as XigniteClient;
 use TotalReturn\Api\Xignite\Split;
+use TotalReturn\KeyValue\Kv;
 use TotalReturn\KeyValue\Ns;
 use TotalReturn\KeyValue\Store;
 use TotalReturn\Market\DividendInterface;
 use TotalReturn\Market\Symbol;
-use TotalReturn\KeyValue\Kv;
-
 
 class MarketData
 {
@@ -130,11 +129,9 @@ class MarketData
 
     protected function updateDividends(Symbol $symbol): void
     {
-
         $lastUpdated = new \DateTime($this->kv->get(Ns::dividendUpdate(), Ns::id($symbol)) ?? 'today -1 day');
 
         if ($lastUpdated < new \DateTime('today')) {
-
             $ticker = $symbol->getTicker();
             $this->logger->debug("Fetching dividends for $ticker");
 

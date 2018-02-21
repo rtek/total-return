@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace TotalReturn\KeyValue;
 
@@ -6,43 +6,41 @@ use TotalReturn\Market\Symbol;
 
 class Ns
 {
-    static public function id($id): string
+    public static function id($id): string
     {
-        if($id instanceof \DateTime) {
+        if ($id instanceof \DateTime) {
             return $id->format('Y-m-d');
         }
 
-        if($id instanceof Symbol) {
+        if ($id instanceof Symbol) {
             return $id->getTicker();
         }
 
         return (string)$id;
     }
 
-    static public function daily(Symbol $symbol): string
+    public static function daily(Symbol $symbol): string
     {
         return "daily-$symbol";
     }
 
-    static public function dividend(Symbol $symbol): string
+    public static function dividend(Symbol $symbol): string
     {
         return "dividend-$symbol";
     }
 
-    static public function dividendUpdate(): string
+    public static function dividendUpdate(): string
     {
         return 'dividend-update';
     }
 
-    static public function split(Symbol $symbol): string
+    public static function split(Symbol $symbol): string
     {
         return "split-$symbol";
     }
 
-    static public function splitUpdate(): string
+    public static function splitUpdate(): string
     {
         return 'split-update';
     }
-
-
 }

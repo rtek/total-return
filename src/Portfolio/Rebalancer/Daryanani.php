@@ -1,5 +1,4 @@
-<?php
-
+<?php declare(strict_types=1);
 
 namespace TotalReturn\Portfolio\Rebalancer;
 
@@ -29,8 +28,8 @@ class Daryanani extends AbstractRebalancer
         $values = $portfolio->getValues();
         $total = array_sum($values);
 
-        foreach($this->allocation as $ticker => $alloc) {
-            if($this->isOutsideRange($ticker, ($values[$ticker] ?? 0) / $total)) {
+        foreach ($this->allocation as $ticker => $alloc) {
+            if ($this->isOutsideRange($ticker, ($values[$ticker] ?? 0) / $total)) {
                 return true;
             }
         }
@@ -49,10 +48,10 @@ class Daryanani extends AbstractRebalancer
         $trades = $this->flattenOthers($values);
 
         $deltas = [];
-        foreach($this->allocation as $ticker => $targetAlloc) {
+        foreach ($this->allocation as $ticker => $targetAlloc) {
             $value = $values[$ticker] ?? 0;
             $delta = $targetAlloc * $totalValue - $value;
-            if($this->isOutsideRange($ticker, $value / $totalValue)) {
+            if ($this->isOutsideRange($ticker, $value / $totalValue)) {
                 $trades[$ticker] = $delta;
             } else {
                 $deltas[$ticker] = $delta;
@@ -62,14 +61,12 @@ class Daryanani extends AbstractRebalancer
         asort($deltas);
 
         while (0.0 < $cashNeeded = round(array_sum($trades) - $cash, 2)) {
-
-            foreach($deltas as $ticker => $delta) {
+            foreach ($deltas as $ticker => $delta) {
                 $trades[$ticker] = max($delta, -$cashNeeded);
                 unset($deltas[$ticker]);
                 break;
             }
         }
-
 
         return $trades;
     }
@@ -83,8 +80,8 @@ class Daryanani extends AbstractRebalancer
     protected function flattenOthers(array $values): array
     {
         $trades = [];
-        foreach($values as $ticker => $value) {
-            if(!array_key_exists($ticker, $this->allocation)) {
+        foreach ($values as $ticker => $value) {
+            if (!array_key_exists($ticker, $this->allocation)) {
                 $trades[$ticker] = -$value;
             }
         }

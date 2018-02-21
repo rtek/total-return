@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace TotalReturn\KeyValue;
 
@@ -42,7 +42,7 @@ class Kv
         return $this->value;
     }
 
-    public function __toString():string
+    public function __toString(): string
     {
         return $this->getNamespace() .'-'. $this->getId();
     }

@@ -1,8 +1,6 @@
-<?php
-
+<?php declare(strict_types=1);
 
 namespace TotalReturn\Api\Av;
-
 
 use TotalReturn\Api\Attribute;
 

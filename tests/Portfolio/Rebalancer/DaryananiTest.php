@@ -1,8 +1,6 @@
-<?php
-
+<?php declare(strict_types=1);
 
 namespace TotalReturn\Portfolio\Rebalancer;
-
 
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -14,7 +12,7 @@ class DaryananiTest extends TestCase
 {
     use AppTrait;
 
-    public function testSimple()
+    public function testSimple(): void
     {
         $md = $this->getMarketData();
         $portfolio = new Portfolio(new \DateTime('2017-01-01'), $md);
@@ -32,11 +30,9 @@ class DaryananiTest extends TestCase
         $portfolio->deposit(10000);
         $portfolio->forwardTo(new \DateTime('2018-02-18'));
 
-        $this->assertEquals(0, round($portfolio->getPosition($portfolio->getCashSymbol()),2));
+        $this->assertEquals(0, round($portfolio->getPosition($portfolio->getCashSymbol()), 2));
 
         //todo test that allocation does not exceed rebalance bands
         //var_dump($portfolio->getAllocation());
-
-
     }
 }
