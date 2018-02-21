@@ -60,8 +60,8 @@ class Portfolio
 
     public function withdraw(float $amount)
     {
-        if ($amount > $this->getPosition($this->cash)) {
-            throw new \LogicException('Cannot withdraw more than available cash');
+        if ($amount > $cash = $this->getPosition($this->cash)) {
+            throw new \LogicException("Cannot withdraw more than available cash ($amount vs $cash)");
         }
 
         $this->adjustPosition($this->cash, -$amount, 1, 'Withdraw');
@@ -132,10 +132,6 @@ class Portfolio
             $values[$ticker] = round($qty * $price, 2);
         }
 
-        foreach ($this->dividends as $dividend) {
-            $values[$this->cash->getTicker()] += round($dividend->getAmount() * $dividend->getPosition(), 2);
-        }
-
         return $values;
     }
 
@@ -144,13 +140,31 @@ class Portfolio
         return array_sum($this->getValues());
     }
 
+    public function getTotalValue(): float
+    {
+        $values = $this->getValues();
+
+        foreach ($this->dividends as $dividend) {
+            $values[$this->cash->getTicker()] += round($dividend->getAmount() * $dividend->getPosition(), 2);
+        }
+
+        return array_sum($values);
+    }
+
+    public function getAllocation(): array
+    {
+        $values = $this->getValues();
+        $total = array_sum($values);
+        return array_map(function($value) use ($total) { return $value / $total; }, $values);
+    }
+
     protected function adjustPosition(Symbol $symbol, float $qty, float $price, string $reason): void
     {
         if (!array_key_exists($ticker = $symbol->getTicker(), $this->position)) {
             $this->position[$ticker] = 0;
         }
 
-        $this->logger->info(sprintf('Adjust: %+10.2f %-5s @ %7.2f %s %s', $qty, $symbol, $price, $this->timeline->today()->format('Y-m-d'), $reason));
+        $this->logger->info(sprintf('%s: %+10.2f %-5s @ %7.2f %s', $this->timeline->today()->format('Y-m-d'), $qty, $symbol, $price, $reason));
 
         $this->position[$ticker] += $qty;
     }

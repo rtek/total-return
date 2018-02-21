@@ -41,16 +41,35 @@ class Daryanani extends AbstractRebalancer
     public function calculateTrades(Portfolio $portfolio): array
     {
         $values = $portfolio->getValues();
-        $total = array_sum($values);
-        unset($values[$portfolio->getCashSymbol()->getTicker()]);
+        $totalValue = array_sum($values);
+        $cashTicker = $portfolio->getCashSymbol()->getTicker();
+        $cash = $values[$cashTicker];
+        unset($values[$cashTicker]);
 
         $trades = $this->flattenOthers($values);
+
+        $deltas = [];
         foreach($this->allocation as $ticker => $targetAlloc) {
             $value = $values[$ticker] ?? 0;
-            if($sign = $this->isOutsideRange($ticker, $value / $total)) {
-                $trades[$ticker] = $sign * $targetAlloc * (1 + $this->tolerance) * $total;
+            $delta = $targetAlloc * $totalValue - $value;
+            if($this->isOutsideRange($ticker, $value / $totalValue)) {
+                $trades[$ticker] = $delta;
+            } else {
+                $deltas[$ticker] = $delta;
             }
         }
+
+        asort($deltas);
+
+        while (0.0 < $cashNeeded = round(array_sum($trades) - $cash, 2)) {
+
+            foreach($deltas as $ticker => $delta) {
+                $trades[$ticker] = max($delta, -$cashNeeded);
+                unset($deltas[$ticker]);
+                break;
+            }
+        }
+
 
         return $trades;
     }

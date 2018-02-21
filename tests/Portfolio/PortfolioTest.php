@@ -22,7 +22,7 @@ class PortfolioTest extends TestCase
         $portfolio->flatten($intc);
 
         //total return calcs make different assumptions about when the divs are reinvested
-        $this->assertEquals(14680.00, round($portfolio->getValue(), -1));
+        $this->assertEquals(14680.00, round($portfolio->getTotalValue(), -1));
     }
 
     public function testSplits(): void
