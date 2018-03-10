@@ -2,6 +2,7 @@
 
 namespace TotalReturn\Portfolio;
 
+use Evenement\EventEmitter;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
 use TotalReturn\Market\Symbol;
@@ -12,6 +13,10 @@ use TotalReturn\Portfolio\Rebalancer\RebalancerInterface;
 class Portfolio
 {
     use LoggerAwareTrait;
+
+    public const E_REBALANCE = 'rebalance';
+    public const E_BEFORE_REBALANCE = 'beforerebalance';
+    public const E_FORWARD = 'forward';
 
     /** @var Timeline */
     protected $timeline;
@@ -30,6 +35,9 @@ class Portfolio
     /** @var RebalancerInterface */
     protected $rebalancer;
 
+    /** @var EventEmitter */
+    protected $events;
+
     public function __construct(\DateTime $startDay, MarketData $marketData)
     {
         $this->marketData = $marketData;
@@ -39,6 +47,18 @@ class Portfolio
         $this->rebalancer = new Manual([
             $this->cash->getTicker() => 1,
         ]);
+
+        $this->events = new EventEmitter();
+    }
+
+    public function getEvents(): EventEmitter
+    {
+        return $this->events;
+    }
+
+    public function getTimeline(): Timeline
+    {
+        return $this->timeline;
     }
 
     public function getCashSymbol(): Symbol
@@ -48,74 +68,58 @@ class Portfolio
 
     public function setRebalancer(RebalancerInterface $rebalancer)
     {
+        $rebalancer->setPortfolio($this);
         $this->rebalancer = $rebalancer;
         return $this;
     }
 
-    public function deposit(float $amount)
+    public function deposit(float $amount): void
     {
-        $this->adjustPosition($this->cash, $amount, 1, 'Deposit');
-        return $this;
+        $this->adjustPosition($this->cash, $this->roundAmount($amount), 1, 'Deposit');
     }
 
-    public function withdraw(float $amount)
+    public function withdraw(float $amount): void
     {
-        if ($amount > $cash = $this->getPosition($this->cash)) {
+        $amount = $this->roundAmount($amount);
+        $cash = $this->getPosition($this->cash);
+        if ($this->roundAmount($amount - $cash) > 0) {
             throw new \LogicException("Cannot withdraw more than available cash ($amount vs $cash)");
         }
 
         $this->adjustPosition($this->cash, -$amount, 1, 'Withdraw');
-        return $this;
     }
 
-    public function buyQuantity(Symbol $symbol, float $qty): float
+    public function tradeQuantity(Symbol $symbol, float $qty): float
     {
         $price = $this->marketData->getClose($symbol, $this->timeline->today());
-        $amount = round($price * $qty, 2);
+        $amount = $this->roundAmount($price * $qty);
 
-        $this->buyAmount($symbol, $amount);
+        $this->tradeAmount($symbol, $amount);
+
         return $amount;
-    }
-
-    public function buyAmount(Symbol $symbol, float $amount): float
-    {
-        $price = $this->marketData->getClose($symbol, $this->timeline->today());
-        $qty = $amount / $price;
-
-        $this->withdraw($amount);
-        $this->adjustPosition($symbol, $qty, $price, "Buy $symbol");
-
-        return $qty;
-    }
-
-    public function sellQuantity(Symbol $symbol, float $qty): float
-    {
-        $price = $this->marketData->getClose($symbol, $this->timeline->today());
-        $amount = round($price * $qty, 2);
-
-        $this->sellAmount($symbol, $amount);
-        return $amount;
-    }
-
-    public function sellAmount(Symbol $symbol, float $amount): float
-    {
-        $price = $this->marketData->getClose($symbol, $this->timeline->today());
-        $qty = $amount / $price;
-
-        $this->adjustPosition($symbol, -$qty, $price, "Sell $symbol");
-        $this->deposit($amount);
-        return $qty;
     }
 
     public function tradeAmount(Symbol $symbol, float $amount): float
     {
-        return $amount >= 0 ? $this->buyAmount($symbol, $amount) : $this->sellAmount($symbol, -$amount);
+        $amount = $this->roundAmount($amount);
+
+        $price = $this->marketData->getClose($symbol, $this->timeline->today());
+        $qty = $amount / $price;
+
+        if($amount >= 0) {
+            $this->withdraw($amount);
+            $this->adjustPosition($symbol, $qty, $price, "Buy $symbol");
+        } else {
+            $this->adjustPosition($symbol, $qty, $price, "Sell $symbol");
+            $this->deposit(-$amount);
+        }
+
+        return $qty;
     }
 
     public function flatten(Symbol $symbol): float
     {
-        $pos = $this->getPosition($symbol);
-        return $pos > 0 ? $this->sellQuantity($symbol, $pos) : $this->buyQuantity($symbol, $pos);
+        return $this->tradeQuantity($symbol, -$this->getPosition($symbol));
     }
 
     public function getPosition(Symbol $symbol): float
@@ -129,7 +133,7 @@ class Portfolio
         $values = [];
         foreach ($this->position as $ticker => $qty) {
             $price = $ticker === $this->cash->getTicker() ? 1 : $this->marketData->getClose(Symbol::lookup($ticker), $today);
-            $values[$ticker] = round($qty * $price, 2);
+            $values[$ticker] = $this->roundAmount($qty * $price);
         }
 
         return $values;
@@ -145,7 +149,7 @@ class Portfolio
         $values = $this->getValues();
 
         foreach ($this->dividends as $dividend) {
-            $values[$this->cash->getTicker()] += round($dividend->getAmount() * $dividend->getPosition(), 2);
+            $values[$this->cash->getTicker()] += $this->roundAmount($dividend->getAmount() * $dividend->getPosition());
         }
 
         return array_sum($values);
@@ -194,22 +198,27 @@ class Portfolio
                 $price = $this->marketData->getClose($symbol = $dividend->getSymbol(), $today);
                 $amt = $dividend->getAmount();
                 $pos = $dividend->getPosition();
-                $this->adjustPosition($symbol, $amt * $pos / $price, $price, sprintf('Dividend re-invest @ %.2f x %.4f = $%.2f', $pos, $amt, $pos * $amt));
+                $qty = $this->roundAmount($pos * $amt) / $price;
+                $this->adjustPosition($symbol, $qty, $price, sprintf('Dividend re-invest @ %.2f x %.4f = $%.2f', $pos, $amt, $qty * $price));
 
                 unset($this->dividends[$i]);
             }
         }
 
         if ($this->rebalancer->needsRebalance($this)) {
+            $this->events->emit(self::E_BEFORE_REBALANCE, [$this]);
             $this->rebalance();
+            $this->events->emit(self::E_REBALANCE, [$this]);
         }
 
         $this->timeline->forward();
+
+        $this->getEvents()->emit(self::E_FORWARD, [$this]);
     }
 
     public function forwardTo(\DateTime $to): void
     {
-        while (!$this->timeline->isEnd() && $this->timeline->today() < $to) {
+        while (!$this->timeline->isEnd() && $this->timeline->next() <= $to) {
             $this->forward();
         }
     }
@@ -217,5 +226,10 @@ class Portfolio
     public function rebalance(): void
     {
         $this->rebalancer->rebalance($this);
+    }
+
+    protected function roundAmount(float $amount): float
+    {
+        return ($amount >= 0 ? 'floor' : 'ceil')($amount * 100) / 100;
     }
 }

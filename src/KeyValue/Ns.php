@@ -43,4 +43,9 @@ class Ns
     {
         return 'split-update';
     }
+
+    public static function tradeDaysUpdate(): string
+    {
+        return 'trade-days-update';
+    }
 }

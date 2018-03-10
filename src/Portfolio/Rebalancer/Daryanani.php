@@ -23,13 +23,10 @@ class Daryanani extends AbstractRebalancer
         $this->tolerance = $tolerance;
     }
 
-    public function needsRebalance(Portfolio $portfolio): bool
+    public function needsRebalance(): bool
     {
-        $values = $portfolio->getValues();
-        $total = array_sum($values);
-
         foreach ($this->allocation as $ticker => $alloc) {
-            if ($this->isOutsideRange($ticker, ($values[$ticker] ?? 0) / $total)) {
+            if ($this->isOutsideRange($ticker, $this->rebalance)) {
                 return true;
             }
         }
@@ -37,44 +34,82 @@ class Daryanani extends AbstractRebalancer
         return false;
     }
 
-    public function calculateTrades(Portfolio $portfolio): array
+    public function calculateTrades(): array
     {
-        $values = $portfolio->getValues();
+        $values = $this->portfolio->getValues();
         $totalValue = array_sum($values);
-        $cashTicker = $portfolio->getCashSymbol()->getTicker();
+        $cashTicker = $this->portfolio->getCashSymbol()->getTicker();
         $cash = $values[$cashTicker];
         unset($values[$cashTicker]);
 
         $trades = $this->flattenOthers($values);
 
-        $deltas = [];
-        foreach ($this->allocation as $ticker => $targetAlloc) {
-            $value = $values[$ticker] ?? 0;
-            $delta = $targetAlloc * $totalValue - $value;
-            if ($this->isOutsideRange($ticker, $value / $totalValue)) {
-                $trades[$ticker] = $delta;
+        $ibErrors = $obErrors = [];
+
+        foreach ($this->allocation as $ticker => $target) {
+            $actual = ($values[$ticker] ?? 0) / $totalValue;
+
+            if ($dir = $this->isOutsideRange($ticker, $this->rebalance)) {
+                //outside range are brought into the tolerance at a minimum
+                $error =  $actual - $target;
+                $trades[$ticker] = -$error * $totalValue * (1 - $this->tolerance);
+                $obErrors[$ticker] = $error * $totalValue * $this->tolerance;
             } else {
-                $deltas[$ticker] = $delta;
+                if($dir = $this->isOutsideRange($ticker, $this->tolerance)) {
+                    //inside ranges can be brought to the other side of the tolerance
+                    $error = $actual - $target * (1 + $this->tolerance) * $dir;
+                    $ibErrors[$ticker] = $error * $totalValue;
+                } else {
+                    //do nothing if they're in the tolerance band
+                }
             }
         }
 
-        asort($deltas);
+        $cashAvail = round($cash - array_sum($trades), 2);
 
-        while (0.0 < $cashNeeded = round(array_sum($trades) - $cash, 2)) {
-            foreach ($deltas as $ticker => $delta) {
-                $trades[$ticker] = max($delta, -$cashNeeded);
-                unset($deltas[$ticker]);
-                break;
+        //if there is > 1 OB trades bring them in to balance
+        if(count($obErrors) > 1) {
+            $totalError = array_sum($obErrors);
+            foreach ($obErrors as $ticker => $error) {
+                $trades[$ticker] += $delta = $cashAvail * $error / $totalError;
+                $obErrors[$ticker] -= $delta;
+            }
+        } else { //otherwise we need to go IB
+            if ($cashAvail > 0) {
+                //error is negative, need to buy
+                asort($ibErrors);
+
+                while ($cashAvail = round($cash - array_sum($trades), 2)) {
+                    foreach ($ibErrors as $ticker => $error) {
+                        $trades[$ticker] = min(-$error, $cashAvail);
+                        unset($ibErrors[$ticker]);
+                        break;
+                    }
+                }
+            } else {
+                //error is positive, need to sell
+                arsort($ibErrors);
+
+                while ($cashNeeded = round(array_sum($trades) - $cash, 2)) {
+                    foreach ($ibErrors as $ticker => $error) {
+                        $trades[$ticker] = max(-$error, -$cashNeeded);
+                        unset($ibErrors[$ticker]);
+                        break;
+                    }
+                }
             }
         }
+
 
         return $trades;
     }
 
-    protected function isOutsideRange(string $ticker, float $actualAlloc): int
+    protected function isOutsideRange(string $ticker, float $range): int
     {
-        $targetAlloc = $this->allocation[$ticker] ?? 0;
-        return abs(1 - $actualAlloc / $targetAlloc)  >= $this->rebalance ? $targetAlloc <=> $actualAlloc : 0;
+        $values = $this->portfolio->getValues();
+        $actual = ($values[$ticker] ?? 0) / array_sum($values);
+        $target = $this->allocation[$ticker] ?? 0;
+        return abs(1 - $actual / $target)  >= $range ? $target <=> $actual : 0;
     }
 
     protected function flattenOthers(array $values): array

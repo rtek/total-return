@@ -10,9 +10,17 @@ abstract class AbstractRebalancer implements RebalancerInterface
     /** @var array */
     protected $allocation;
 
+    /** @var Portfolio */
+    protected $portfolio;
+
     public function __construct(array $allocation)
     {
         $this->setAllocation($allocation);
+    }
+
+    public function setPortfolio(Portfolio $portfolio): void
+    {
+        $this->portfolio = $portfolio;
     }
 
     public function setAllocation(array $allocation): void
@@ -24,14 +32,14 @@ abstract class AbstractRebalancer implements RebalancerInterface
         }
     }
 
-    public function rebalance(Portfolio $portfolio): void
+    public function rebalance(): void
     {
-        $trades = $this->calculateTrades($portfolio);
+        $trades = $this->calculateTrades();
         asort($trades);
         foreach ($trades as $ticker => $trade) {
-            $portfolio->tradeAmount(Symbol::lookup($ticker), $trade);
+            $this->portfolio->tradeAmount(Symbol::lookup($ticker), $trade);
         }
     }
 
-    abstract public function calculateTrades(Portfolio $portfolio): array;
+    abstract public function calculateTrades(): array;
 }

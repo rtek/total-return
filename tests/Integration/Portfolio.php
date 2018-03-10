@@ -5,9 +5,8 @@ namespace TotalReturn\Integration;
 use PHPUnit\Framework\TestCase;
 use TotalReturn\AppTrait;
 use TotalReturn\Logger;
-use TotalReturn\Market\Symbol;
-use TotalReturn\MarketData;
-use TotalReturn\Service;
+use TotalReturn\Portfolio\Rebalancer\Daryanani;
+use TotalReturn\Portfolio\Portfolio as Folio;
 
 class Portfolio extends TestCase
 {
@@ -15,22 +14,32 @@ class Portfolio extends TestCase
 
     public function testTrades(): void
     {
-        $app = $this->createApp();
-        $sm = $app->getServiceManager();
+        $md = $this->getMarketData();
+        $portfolio = new Folio(new \DateTime('2013-01-01'), $md);
 
-        /** @var MarketData $md */
-        $md = $sm->get(Service::MARKET_DATA);
-        $md->setLogger($logger = new Logger());
-
-        $portfolio = new \TotalReturn\Portfolio\Portfolio(new \DateTime('2015-02-05'), $md);
-
+        $logger = new Logger();
+        $md->setLogger($logger);
         $portfolio->setLogger($logger);
 
-        $portfolio->deposit($basis = 10000);
-        $portfolio->buyAmount($intc = Symbol::lookup('INTC'), $basis);
-        $portfolio->forwardTo(new \DateTime('today'));
-        $portfolio->flatten($intc);
 
-        $logger->info('Ending Value: '. $portfolio->getValue());
+
+        $portfolio->getEvents()
+            ->on(Folio::E_FORWARD, [$logger, 'debugAllocation']);
+            //->on(Folio::E_BEFORE_REBALANCE, [$logger, 'debugAllocation'])
+           // ->on(Folio::E_REBALANCE, [$logger, 'debugAllocation']);
+
+
+        $portfolio->setRebalancer(new Daryanani($targetAlloc = [
+            'VTI'  => 0.35,
+            'VXUS' => 0.35,
+            'BND'  => 0.30,
+        ], 1, 0.20, 0.10));
+
+        $portfolio->deposit(10000);
+        $portfolio->forwardTo(new \DateTime('2018-03-10'));
+
+        var_dump($portfolio->getValues(), $portfolio->getTotalValue());
+
+
     }
 }

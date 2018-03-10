@@ -4,6 +4,7 @@ namespace TotalReturn\Portfolio;
 
 use PHPUnit\Framework\TestCase;
 use TotalReturn\AppTrait;
+use TotalReturn\Logger;
 use TotalReturn\Market\Symbol;
 use TotalReturn\Portfolio\Rebalancer\AbsolutePercent;
 
@@ -16,7 +17,7 @@ class PortfolioTest extends TestCase
         $portfolio = new Portfolio(new \DateTime('2015-02-05'), $this->getMarketData());
 
         $portfolio->deposit($basis = 10000);
-        $portfolio->buyAmount($intc = Symbol::lookup('INTC'), $basis);
+        $portfolio->tradeAmount($intc = Symbol::lookup('INTC'), $basis);
         $portfolio->forwardTo(new \DateTime('2018-02-18'));
         $portfolio->flatten($intc);
 
@@ -29,7 +30,7 @@ class PortfolioTest extends TestCase
         $portfolio = new Portfolio(new \DateTime('2015-02-05'), $md = $this->getMarketData());
 
         $portfolio->deposit($basis = 10000);
-        $portfolio->buyAmount($vxx = Symbol::lookup('VXX'), $basis);
+        $portfolio->tradeAmount($vxx = Symbol::lookup('VXX'), $basis);
         $portfolio->forwardTo(new \DateTime('2018-02-18'));
         $portfolio->flatten($vxx);
 

@@ -6,6 +6,7 @@ use TotalReturn\Portfolio\Portfolio;
 
 interface RebalancerInterface
 {
-    public function needsRebalance(Portfolio $portfolio): bool;
-    public function rebalance(Portfolio $portfolio): void;
+    public function setPortfolio(Portfolio $portfolio): void;
+    public function needsRebalance(): bool;
+    public function rebalance(): void;
 }

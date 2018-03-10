@@ -7,14 +7,14 @@ use TotalReturn\Portfolio\Portfolio;
 
 class Manual extends AbstractRebalancer
 {
-    public function needsRebalance(Portfolio $portfolio): bool
+    public function needsRebalance(): bool
     {
         return false;
     }
 
-    public function calculateTrades(Portfolio $portfolio): array
+    public function calculateTrades(): array
     {
-        $values = $portfolio->getValues();
+        $values = $this->portfolio->getValues();
         $total = array_sum($values);
         $deltas = [];
 

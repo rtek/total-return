@@ -35,6 +35,11 @@ class Timeline
         return clone $this->days[$this->index];
     }
 
+    public function next(): ?\DateTime
+    {
+        return $this->isEnd() ? null : clone $this->days[$this->index+1];
+    }
+
     public function forward(): void
     {
         $this->index++;

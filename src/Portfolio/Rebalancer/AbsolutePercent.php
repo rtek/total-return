@@ -3,7 +3,6 @@
 namespace TotalReturn\Portfolio\Rebalancer;
 
 use TotalReturn\Market\Symbol;
-use TotalReturn\Portfolio\Portfolio;
 
 class AbsolutePercent extends Manual
 {
@@ -24,9 +23,9 @@ class AbsolutePercent extends Manual
         $this->threshold = $threshold;
     }
 
-    public function needsRebalance(Portfolio $portfolio): bool
+    public function needsRebalance(): bool
     {
-        $values = $portfolio->getValues();
+        $values = $this->portfolio->getValues();
         $total = array_sum($values);
 
         foreach ($this->allocation as $ticker => $target) {

@@ -20,7 +20,7 @@ class MarketData
     use LoggerAwareTrait;
 
     public const TRADEDAY_TICKER = 'SPY';
-    public const TRADEDAY_DAY = '2010-01-05';
+    public const TRADEDAY_START = '2010-01-05';
 
     /** @var Store */
     protected $kv;
@@ -54,8 +54,16 @@ class MarketData
     public function getTradingDays(): array
     {
         if ($this->tradingDays === null) {
+
+            $lastUpdated = new \DateTime($this->kv->get(Ns::tradeDaysUpdate(), self::TRADEDAY_TICKER) ?? self::TRADEDAY_START);
+
             $symbol = Symbol::lookup(self::TRADEDAY_TICKER);
-            $this->getDaily($symbol, new \DateTime(self::TRADEDAY_DAY));
+            $today = new \DateTime('today');
+            if($lastUpdated < $today) {
+                $this->updateDaily($symbol, $today);
+                $this->kv->replace(new Kv(Ns::tradeDaysUpdate(), self::TRADEDAY_TICKER, $today->format('Y-m-d')));
+            }
+
             $this->tradingDays = array_map(function ($id) {
                 return new \DateTime($id);
             }, $this->kv->getIds(Ns::daily($symbol)));
@@ -96,6 +104,18 @@ class MarketData
 
     protected function getDaily(Symbol $symbol, \DateTime $day): Daily
     {
+        $this->updateDaily($symbol, $day);
+        $daily = $this->kv->get($ns = Ns::daily($symbol), $id = Ns::id($day));
+
+        if (!$daily instanceof Daily) {
+            throw new \LogicException("$ns $id did not return Daily");
+        }
+
+        return $daily;
+    }
+
+    protected function updateDaily(Symbol $symbol, \DateTime $day): void
+    {
         if (!$this->kv->has($ns = Ns::daily($symbol), $id = Ns::id($day))) {
             //100 datapoints is not 100 trade days but close enough
             $size = $day > new \DateTime('now -100 days') ? 'compact' : 'full';
@@ -110,14 +130,6 @@ class MarketData
 
             $this->kv->replaceMany($replace);
         }
-
-        $daily = $this->kv->get($ns, $id);
-
-        if (!$daily instanceof Daily) {
-            throw new \LogicException("$ns $id did not return Daily");
-        }
-
-        return $daily;
     }
 
     public function findDividend(Symbol $symbol, \DateTime $exDate): ?DividendInterface

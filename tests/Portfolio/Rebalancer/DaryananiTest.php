@@ -21,7 +21,7 @@ class DaryananiTest extends TestCase
         $md->setLogger($logger);
         $portfolio->setLogger($logger);
 
-        $portfolio->setRebalancer(new Daryanani([
+        $portfolio->setRebalancer(new Daryanani($targetAlloc = [
             'VTI'  => 0.35,
             'VXUS' => 0.35,
             'BND'  => 0.30,
@@ -30,9 +30,6 @@ class DaryananiTest extends TestCase
         $portfolio->deposit(10000);
         $portfolio->forwardTo(new \DateTime('2018-02-18'));
 
-        $this->assertEquals(0, round($portfolio->getPosition($portfolio->getCashSymbol()), 2));
-
-        //todo test that allocation does not exceed rebalance bands
-        //var_dump($portfolio->getAllocation());
+        $this->assertEquals(0, $portfolio->getPosition($portfolio->getCashSymbol()), 'Cash is not zero', 1.0);
     }
 }
