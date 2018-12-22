@@ -64,6 +64,7 @@ class Daryanani extends AbstractRebalancer
 
         arsort($ibErrors);
 
+        //raise cash from the largest in-band errors
         while(0 < $cashNeeded = round(array_sum($trades) - $cash, 2)) {
             if(count($ibErrors) === 0) {
                 throw new \LogicException('Cannot raise cash');
@@ -78,6 +79,7 @@ class Daryanani extends AbstractRebalancer
         $totalTrades = array_sum($trades);
         $projectedCash = round($cash - $totalTrades, 2);
 
+        //only distribute free cash to existing buys
         if(0 < $freeCash = $projectedCash - $totalValue *  (1 - array_sum($this->allocation))) {
             $errors = array_intersect_key(array_filter($allErrors, function($e) { return $e < 0; }), $trades);
             $totalError = array_sum($errors);

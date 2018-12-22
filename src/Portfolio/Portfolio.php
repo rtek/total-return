@@ -171,7 +171,14 @@ class Portfolio
             $this->position[$ticker] = 0;
         }
 
-        $this->logger->info(sprintf('%s: %+10.2f %-5s @ %7.2f %s', $this->timeline->formatToday(), $qty, $symbol, $price, $reason));
+        $this->logger->info(sprintf(
+            '%s: %+10.0f %-5s @ %7.2f %s',
+            $this->timeline->formatToday(),
+            $qty,
+            $symbol,
+            $price,
+            $reason
+        ));
 
         $this->position[$ticker] += $qty;
     }
