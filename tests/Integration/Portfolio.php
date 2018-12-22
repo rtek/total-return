@@ -15,7 +15,7 @@ class Portfolio extends TestCase
     public function testTrades(): void
     {
         $md = $this->getMarketData();
-        $portfolio = new Folio(new \DateTime('2013-01-01'), $md);
+        $portfolio = new Folio(new \DateTime('2018-01-31'), $md);
 
         $logger = new Logger();
         $md->setLogger($logger);
@@ -24,21 +24,26 @@ class Portfolio extends TestCase
 
 
         $portfolio->getEvents()
-            ->on(Folio::E_FORWARD, [$logger, 'debugAllocation']);
-            //->on(Folio::E_BEFORE_REBALANCE, [$logger, 'debugAllocation'])
-           // ->on(Folio::E_REBALANCE, [$logger, 'debugAllocation']);
+            //->on(Folio::E_FORWARD, [$logger, 'debugAllocation']);
+            ->on(Folio::E_BEFORE_REBALANCE, [$logger, 'debugAllocation'])
+            ->on(Folio::E_REBALANCE, [$logger, 'debugAllocation']);
 
 
         $portfolio->setRebalancer(new Daryanani($targetAlloc = [
-            'VTI'  => 0.35,
-            'VXUS' => 0.35,
-            'BND'  => 0.30,
-        ], 1, 0.20, 0.10));
+            'VTI'  => 0.325,
+            'VXUS' => 0.325,
+            'BND'  => 0.35,
+        ], 1, 0.10, 0.05));
 
-        $portfolio->deposit(10000);
-        $portfolio->forwardTo(new \DateTime('2018-03-10'));
+        $portfolio->deposit($deposit = 10000);
+        $portfolio->forwardTo(new \DateTime('today'));
 
         var_dump($portfolio->getValues(), $portfolio->getTotalValue());
+
+        $logger->info(sprintf(
+            "Report\n Total Return: %%%.2f\n",
+            ($portfolio->getTotalValue() - $deposit) / $deposit * 100
+        ));
 
 
     }

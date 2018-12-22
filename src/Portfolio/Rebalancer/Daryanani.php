@@ -3,7 +3,6 @@
 namespace TotalReturn\Portfolio\Rebalancer;
 
 //http://resource.fpanet.org/resource/09BBF2F9-D5B3-9B76-B02E27EB8731C337/daryanani.pdf
-use TotalReturn\Portfolio\Portfolio;
 
 class Daryanani extends AbstractRebalancer
 {
@@ -44,59 +43,46 @@ class Daryanani extends AbstractRebalancer
 
         $trades = $this->flattenOthers($values);
 
-        $ibErrors = $obErrors = [];
+        //ib = in rebalance band
+        $ibErrors = $allErrors = [];
 
         foreach ($this->allocation as $ticker => $target) {
             $actual = ($values[$ticker] ?? 0) / $totalValue;
-
+            $error =  $actual - $target;
+            $allErrors[$ticker] = $error * $totalValue;
             if ($dir = $this->isOutsideRange($ticker, $this->rebalance)) {
-                //outside range are brought into the tolerance at a minimum
-                $error =  $actual - $target;
-                $trades[$ticker] = -$error * $totalValue * (1 - $this->tolerance);
-                $obErrors[$ticker] = $error * $totalValue * $this->tolerance;
+                //outside rebalance are brought into balance
+                $trades[$ticker] = -$error * $totalValue;
+            } elseif($dir = $this->isOutsideRange($ticker, $this->tolerance)) {
+                //inside rebalance can be brought the other side of the tolerance
+                $ibErrors[$ticker] = $error * (1 + $this->tolerance) * $dir;
             } else {
-                if($dir = $this->isOutsideRange($ticker, $this->tolerance)) {
-                    //inside ranges can be brought to the other side of the tolerance
-                    $error = $actual - $target * (1 + $this->tolerance) * $dir;
-                    $ibErrors[$ticker] = $error * $totalValue;
-                } else {
-                    //do nothing if they're in the tolerance band
-                }
+                //inside tolerance can be brought to the target
+                $ibErrors[$ticker] = $error;
             }
         }
 
-        $cashAvail = round($cash - array_sum($trades), 2);
+        arsort($ibErrors);
 
-        //if there is > 1 OB trades bring them in to balance
-        if(count($obErrors) > 1) {
-            $totalError = array_sum($obErrors);
-            foreach ($obErrors as $ticker => $error) {
-                $trades[$ticker] += $delta = $cashAvail * $error / $totalError;
-                $obErrors[$ticker] -= $delta;
+        while(0 < $cashNeeded = round(array_sum($trades) - $cash, 2)) {
+            if(count($ibErrors) === 0) {
+                throw new \LogicException('Cannot raise cash');
             }
-        } else { //otherwise we need to go IB
-            if ($cashAvail > 0) {
-                //error is negative, need to buy
-                asort($ibErrors);
 
-                while ($cashAvail = round($cash - array_sum($trades), 2)) {
-                    foreach ($ibErrors as $ticker => $error) {
-                        $trades[$ticker] = min(-$error, $cashAvail);
-                        unset($ibErrors[$ticker]);
-                        break;
-                    }
-                }
-            } else {
-                //error is positive, need to sell
-                arsort($ibErrors);
+            $ticker = key($ibErrors);
+            $error = array_shift($ibErrors);
 
-                while ($cashNeeded = round(array_sum($trades) - $cash, 2)) {
-                    foreach ($ibErrors as $ticker => $error) {
-                        $trades[$ticker] = max(-$error, -$cashNeeded);
-                        unset($ibErrors[$ticker]);
-                        break;
-                    }
-                }
+            $trades[$ticker] = max(-$cashNeeded, -$error * $totalValue);
+        }
+
+        $totalTrades = array_sum($trades);
+        $projectedCash = round($cash - $totalTrades, 2);
+
+        if(0 < $freeCash = $projectedCash - $totalValue *  (1 - array_sum($this->allocation))) {
+            $errors = array_intersect_key(array_filter($allErrors, function($e) { return $e < 0; }), $trades);
+            $totalError = array_sum($errors);
+            foreach($errors as $ticker => $error) {
+                $trades[$ticker] += $freeCash * $error / $totalError;
             }
         }
 

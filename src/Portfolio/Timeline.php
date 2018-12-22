@@ -50,6 +50,10 @@ class Timeline
         return $this->index === count($this->days) - 1;
     }
 
+    public function formatToday(): string
+    {
+        return $this->today()->format('Y-m-d D');
+    }
     protected function findNearestIndex(\DateTime $day)
     {
         foreach ($this->days as $i => $d) {

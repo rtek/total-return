@@ -21,8 +21,8 @@ class Logger implements LoggerInterface
     {
         $alloc = $p->getAllocation();
         $parts =  array_map(function($k, $v) {
-            return sprintf('%s %%%.1f', $k, $v*100);
+            return sprintf('%s %.1f%%', $k, $v*100);
         }, array_keys($alloc), $alloc);
-        $this->debug($p->getTimeline()->today()->format('Y-m-d') .': '. implode(' ',$parts));
+        $this->debug($p->getTimeline()->formatToday() .':                  '. implode(' ',$parts));
     }
 }

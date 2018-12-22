@@ -16,7 +16,8 @@ class Portfolio
 
     public const E_REBALANCE = 'rebalance';
     public const E_BEFORE_REBALANCE = 'beforerebalance';
-    public const E_FORWARD = 'forward';
+    public const E_DAY_END = 'dayend';
+    public const E_DAY_START = 'daystart';
 
     /** @var Timeline */
     protected $timeline;
@@ -170,7 +171,7 @@ class Portfolio
             $this->position[$ticker] = 0;
         }
 
-        $this->logger->info(sprintf('%s: %+10.2f %-5s @ %7.2f %s', $this->timeline->today()->format('Y-m-d'), $qty, $symbol, $price, $reason));
+        $this->logger->info(sprintf('%s: %+10.2f %-5s @ %7.2f %s', $this->timeline->formatToday(), $qty, $symbol, $price, $reason));
 
         $this->position[$ticker] += $qty;
     }
@@ -178,6 +179,8 @@ class Portfolio
     public function forward(): void
     {
         $today = $this->timeline->today();
+
+        $this->getEvents()->emit(self::E_DAY_START, [$this]);
 
         foreach ($this->position as $ticker => $pos) {
             $symbol = Symbol::lookup($ticker);
@@ -213,7 +216,7 @@ class Portfolio
 
         $this->timeline->forward();
 
-        $this->getEvents()->emit(self::E_FORWARD, [$this]);
+        $this->getEvents()->emit(self::E_DAY_END, [$this]);
     }
 
     public function forwardTo(\DateTime $to): void
