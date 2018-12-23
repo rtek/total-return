@@ -54,12 +54,11 @@ class MarketData
     public function getTradingDays(): array
     {
         if ($this->tradingDays === null) {
-
             $lastUpdated = new \DateTime($this->kv->get(Ns::tradeDaysUpdate(), self::TRADEDAY_TICKER) ?? self::TRADEDAY_START);
 
             $symbol = Symbol::lookup(self::TRADEDAY_TICKER);
             $today = new \DateTime('today');
-            if($lastUpdated < $today) {
+            if ($lastUpdated < $today) {
                 $this->updateDaily($symbol, $today);
                 $this->kv->replace(new Kv(Ns::tradeDaysUpdate(), self::TRADEDAY_TICKER, $today->format('Y-m-d')));
             }

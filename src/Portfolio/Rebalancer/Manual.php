@@ -3,7 +3,6 @@
 namespace TotalReturn\Portfolio\Rebalancer;
 
 use TotalReturn\Market\Symbol;
-use TotalReturn\Portfolio\Portfolio;
 
 class Manual extends AbstractRebalancer
 {

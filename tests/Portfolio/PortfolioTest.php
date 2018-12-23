@@ -4,7 +4,6 @@ namespace TotalReturn\Portfolio;
 
 use PHPUnit\Framework\TestCase;
 use TotalReturn\AppTrait;
-use TotalReturn\Logger;
 use TotalReturn\Market\Symbol;
 use TotalReturn\Portfolio\Rebalancer\AbsolutePercent;
 

@@ -5,8 +5,8 @@ namespace TotalReturn\Integration;
 use PHPUnit\Framework\TestCase;
 use TotalReturn\AppTrait;
 use TotalReturn\Logger;
-use TotalReturn\Portfolio\Rebalancer\Daryanani;
 use TotalReturn\Portfolio\Portfolio as Folio;
+use TotalReturn\Portfolio\Rebalancer\Daryanani;
 
 class Portfolio extends TestCase
 {
@@ -21,13 +21,10 @@ class Portfolio extends TestCase
         $md->setLogger($logger);
         $portfolio->setLogger($logger);
 
-
-
         $portfolio->getEvents()
             //->on(Folio::E_FORWARD, [$logger, 'debugAllocation']);
             ->on(Folio::E_BEFORE_REBALANCE, [$logger, 'debugAllocation'])
             ->on(Folio::E_REBALANCE, [$logger, 'debugAllocation']);
-
 
         $portfolio->setRebalancer(new Daryanani($targetAlloc = [
             'VTI'  => 0.325,
@@ -44,7 +41,5 @@ class Portfolio extends TestCase
             "Report\n Total Return: %%%.2f\n",
             ($portfolio->getTotalValue() - $deposit) / $deposit * 100
         ));
-
-
     }
 }

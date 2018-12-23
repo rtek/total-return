@@ -2,8 +2,9 @@
 
 namespace TotalReturn\Portfolio\Rebalancer;
 
-//http://resource.fpanet.org/resource/09BBF2F9-D5B3-9B76-B02E27EB8731C337/daryanani.pdf
-
+/**
+ * An interpretation of data/docs/daryanani.pdf
+ */
 class Daryanani extends AbstractRebalancer
 {
     /** @var float */
@@ -13,13 +14,13 @@ class Daryanani extends AbstractRebalancer
     /** @var int */
     protected $interval;
 
-    public function __construct(array $allocation, int $interval, float $rebalance, float $tolerance)
+    public function __construct(array $allocation, int $interval, float $rebalance, float $tolerance = null)
     {
         parent::__construct($allocation);
         //@todo interval limiting
         $this->interval = $interval;
         $this->rebalance = $rebalance;
-        $this->tolerance = $tolerance;
+        $this->tolerance = $tolerance ?? $rebalance / 2;
     }
 
     public function needsRebalance(): bool
@@ -30,7 +31,7 @@ class Daryanani extends AbstractRebalancer
             }
         }
 
-        return false;
+        return $this->portfolio->getCashValue() / $this->portfolio->getValue() > (1 - array_sum($this->allocation)) * (1 + $this->tolerance);
     }
 
     public function calculateTrades(): array
@@ -51,9 +52,9 @@ class Daryanani extends AbstractRebalancer
             $error =  $actual - $target;
             $allErrors[$ticker] = $error * $totalValue;
             if ($dir = $this->isOutsideRange($ticker, $this->rebalance)) {
-                //outside rebalance are brought into balance
+                //outside rebalance are brought to the target
                 $trades[$ticker] = -$error * $totalValue;
-            } elseif($dir = $this->isOutsideRange($ticker, $this->tolerance)) {
+            } elseif ($dir = $this->isOutsideRange($ticker, $this->tolerance)) {
                 //inside rebalance can be brought the other side of the tolerance
                 $ibErrors[$ticker] = $error * (1 + $this->tolerance) * $dir;
             } else {
@@ -65,8 +66,8 @@ class Daryanani extends AbstractRebalancer
         arsort($ibErrors);
 
         //raise cash from the largest in-band errors
-        while(0 < $cashNeeded = round(array_sum($trades) - $cash, 2)) {
-            if(count($ibErrors) === 0) {
+        while (0 < $cashNeeded = round(array_sum($trades) - $cash, 2)) {
+            if (count($ibErrors) === 0) {
                 throw new \LogicException('Cannot raise cash');
             }
 
@@ -76,18 +77,28 @@ class Daryanani extends AbstractRebalancer
             $trades[$ticker] = max(-$cashNeeded, -$error * $totalValue);
         }
 
-        $totalTrades = array_sum($trades);
-        $projectedCash = round($cash - $totalTrades, 2);
+        $projectedCash = round($cash - array_sum($trades), 2);
 
-        //only distribute free cash to existing buys
-        if(0 < $freeCash = $projectedCash - $totalValue *  (1 - array_sum($this->allocation))) {
-            $errors = array_intersect_key(array_filter($allErrors, function($e) { return $e < 0; }), $trades);
-            $totalError = array_sum($errors);
-            foreach($errors as $ticker => $error) {
-                $trades[$ticker] += $freeCash * $error / $totalError;
+        //only distribute free cash to existing buys, then by negative error amount
+        if (0 < $freeCash = $projectedCash - $totalValue *  (1 - array_sum($this->allocation))) {
+            $errors = array_filter($allErrors, function ($e) {
+                return $e < 0;
+            });
+
+            if (count($trades) > 0) {
+                $errors = array_intersect_key($errors, $trades);
+            }
+
+            asort($errors);
+
+            foreach ($errors as $ticker => $error) {
+                $trades[$ticker] = ($trades[$ticker] ?? 0) + $trade = min($freeCash, -$error);
+                $freeCash -= $trade;
+                if ($freeCash <= 0) {
+                    break;
+                }
             }
         }
-
 
         return $trades;
     }
