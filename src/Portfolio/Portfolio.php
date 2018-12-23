@@ -276,7 +276,9 @@ class Portfolio
      * Progress the portfolio forward by one trading day
      *
      * * Adjust for splits
-     * * Record dividend
+     * * Record dividends
+     * * Pay dividends
+     * * Rebalance if the rebalancer says so
      */
     public function forward(): void
     {

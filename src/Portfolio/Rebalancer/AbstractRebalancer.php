@@ -42,4 +42,15 @@ abstract class AbstractRebalancer implements RebalancerInterface
     }
 
     abstract public function calculateTrades(): array;
+
+    protected function flattenOthers(array $values): array
+    {
+        $trades = [];
+        foreach ($values as $ticker => $value) {
+            if (!array_key_exists($ticker, $this->allocation)) {
+                $trades[$ticker] = -$value;
+            }
+        }
+        return $trades;
+    }
 }

@@ -44,8 +44,7 @@ class Daryanani extends AbstractRebalancer
 
         $trades = $this->flattenOthers($values);
 
-        //ib = in rebalance band
-        $ibErrors = $allErrors = [];
+        $allowedDelta = $allErrors = [];
 
         foreach ($this->allocation as $ticker => $target) {
             $actual = ($values[$ticker] ?? 0) / $totalValue;
@@ -54,27 +53,24 @@ class Daryanani extends AbstractRebalancer
             if ($dir = $this->isOutsideRange($ticker, $this->rebalance)) {
                 //outside rebalance are brought to the target
                 $trades[$ticker] = -$error * $totalValue;
-            } elseif ($dir = $this->isOutsideRange($ticker, $this->tolerance)) {
-                //inside rebalance can be brought the other side of the tolerance
-                $ibErrors[$ticker] = $error * (1 + $this->tolerance) * $dir;
             } else {
-                //inside tolerance can be brought to the target
-                $ibErrors[$ticker] = $error;
+                //inside rebalance can be brought the  lower side of the tolerance to raise money
+                $allowedDelta[$ticker] = $target * (1 - $this->tolerance) - $actual;
             }
         }
 
-        arsort($ibErrors);
+        arsort($allowedDelta);
 
         //raise cash from the largest in-band errors
         while (0 < $cashNeeded = round(array_sum($trades) - $cash, 2)) {
-            if (count($ibErrors) === 0) {
+            if (count($allowedDelta) === 0) {
                 throw new \LogicException('Cannot raise cash');
             }
 
-            $ticker = key($ibErrors);
-            $error = array_shift($ibErrors);
+            $ticker = key($allowedDelta);
+            $delta = array_shift($allowedDelta);
 
-            $trades[$ticker] = max(-$cashNeeded, -$error * $totalValue);
+            $trades[$ticker] = max(-$cashNeeded, $delta * $totalValue);
         }
 
         $projectedCash = round($cash - array_sum($trades), 2);
@@ -111,14 +107,4 @@ class Daryanani extends AbstractRebalancer
         return abs(1 - $actual / $target)  >= $range ? $target <=> $actual : 0;
     }
 
-    protected function flattenOthers(array $values): array
-    {
-        $trades = [];
-        foreach ($values as $ticker => $value) {
-            if (!array_key_exists($ticker, $this->allocation)) {
-                $trades[$ticker] = -$value;
-            }
-        }
-        return $trades;
-    }
 }
